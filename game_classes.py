@@ -1,5 +1,5 @@
 class Mystery():
-    def __init__(self, name:str, target:dict, target_stat_and_strength:dict, is_active:bool, turn_count = 0) -> None:
+    def __init__(self, name:str, target:str, target_stat_and_strength:dict, is_active:bool, turn_count = 0) -> None:
         self.name = name
         self.target = target
         self.target_stat_and_strength = target_stat_and_strength
@@ -15,7 +15,7 @@ class Mystery():
     
 
 class Weapon():
-    def __init__(self, name, weapon_strength, mysteries = []) -> None:
+    def __init__(self, name:str, weapon_strength:int, mysteries = []) -> None:
         self.name = name
         self.weapon_strength = weapon_strength
         self.mysteries = mysteries
@@ -119,6 +119,12 @@ class Creature():
 
     def set_conditions(self, mystery):
         self.conditions.update({mystery.name: [mystery.target_stat_and_stregth, mystery.turn_count]})
+    
+
+    def attack(self, target:object, mystery:object):
+        # target should be list and can be multiple targets
+        print("slm")
+        ...
                 
     
 class Player(Creature):
@@ -198,12 +204,13 @@ def attack_system(turn, battle_queue):
     #attack
     for battler in battle_queue:
         if battler.__class__.__name__ == "Player":
-            attack_ui(battler, battle_queue)
+            enemy_queue = [enemy for enemy in battle_queue if enemy.__class__.__name__ != "Player"]
+            attack_ui(battler, enemy_queue)
 
         else:
             ...
 
-def attack_ui(player, battle_queue):
+def attack_ui(player, enemy_queue):
     while True:
         choice = input("""
         Take action:
@@ -213,9 +220,10 @@ def attack_ui(player, battle_queue):
         action: """)
         print("----------")
         if choice == "1":   
-            info_ui(player, battle_queue)
+            info_ui(player, enemy_queue)
         elif choice == "2":
-            attack_action(player, battle_queue)
+            attack_action(player, enemy_queue)
+            break
         
     # show info of player and enemies(prediction required) okay
     # take action
@@ -224,36 +232,48 @@ def attack_ui(player, battle_queue):
     ...
 
 
-def info_ui(player, battle_queue):
+def info_ui(player, enemy_queue):
     print(player.get_stats())
     print("----------")
-    for enemy in battle_queue:
-        if enemy.__class__.__name__ == "Player":
-            continue
+    for enemy in enemy_queue:
         print(enemy.get_stats(player.real_stats["prediction"]))
         print("----------")
     input("Press Enter to continue...")
 
 
-def attack_action(player, battle_queue):
+def attack_action(player, enemy_queue):
     while True:
-        try:
-            choice = int(input("Choose an Action:\n"+player.get_stats(True)[0]+"\nAction: "))
-            if choice > len(player.active_mysteries):
-                raise ValueError
-            break
-        except ValueError:
-            print("Invalid input")
-    
-    print(player.get_stats(True)[1])
-    # show active mysteries
-    # take target if requered
+        choice = check_is_int_and_len_longty(input("Choose an Action:\n"+player.get_stats(True)[0]+"\nAction: "), len(player.active_mysteries))
+        if choice:
+            chosen_mystery = player.get_stats(True)[1][choice-1]
+            if chosen_mystery.target == "enemy":
+                enemies = "".join([f"{count}==> {enemy.name}\n" for count, enemy in enumerate(enemy_queue, 1)])
+                while True:
+                    target = check_is_int_and_len_longty(input(f"Choose a target:\n{enemies}Target: "), len(enemy_queue))
+                    if target:
+                        player.attack(enemy_queue[target-1], chosen_mystery)
+                        break
+                break
+            ...
+        # show active mysteries
+        # take target if requered
     ...
+
+
+
+
+def check_is_int_and_len_longty(input, lenght = None):
+    try:
+        input = int(input)
+        if lenght:
+            if not (0 < input <= lenght):
+                raise ValueError
+    except ValueError:
+        print("\nInvalid input\n")
+        return False
+    return input
+
 
 player.take_mystery([blackfire, pure_soul])
 battle_system(player)
 
-player.change_weapon(None)
-for i in player.active_mysteries.keys():
-    print(i)
-print(player.real_stats["constitution"])
