@@ -1,8 +1,9 @@
 class Mystery():
-    def __init__(self, name:str, target:str, target_stat_and_strength:dict, is_active:bool, turn_count = 0) -> None:
+    def __init__(self, name:str, target:str, target_stat_and_strength:dict, aura_cost:int, is_active:bool, turn_count = 0) -> None:
         self.name = name
         self.target = target
         self.target_stat_and_strength = target_stat_and_strength
+        self.aura_cost = aura_cost
         self.is_active = is_active
         self.turn_count = turn_count
     
@@ -10,8 +11,8 @@ class Mystery():
         return self.name
     
     def get_description(self):
-        # f"The intrepid adventurer {self.name} has set their sights on {self.target}! With {self.target_stat_and_strength} in their sights, they unleash a devastating attack that will last for {self.turn_count} turns." + Will their risky gambit pay off, or will they fall prey to the dangers lurking around every corner in this rogue-like adventure?
-        return f"{self.name} is targeting {self.target} with {self.target_stat_and_strength} for {self.turn_count} turns."
+        # f"The intrepid adventurer {self.name} has set their sights on {self.target}! With {self.target_stat_and_strength} in their sights, they unleash a devastating attack that will last for {self.turn_count} turns." + Will their risky gambit pay off, or will they fall prey to the dangers lurking around every corner in that floor?
+        return f"{self.name} is targeting {self.target} with {self.target_stat_and_strength} until {self.turn_count} turns for cost of {self.aura_cost} aura"
     
 
 class Weapon():
@@ -26,6 +27,7 @@ class Weapon():
 
     def get_mysteries(self):
         return self.mysteries
+
     
 
 class Creature():
@@ -68,23 +70,28 @@ class Creature():
         if not self.conditions:
             return "No conditions"
 
+
     def change_weapon(self, taken_weapon):
         self.weapon = taken_weapon
         self.set_mysteries()
+
 
     def take_mystery(self, taken_mystery):
         self.mystery_dict.update({mystery.name: mystery for mystery in taken_mystery})
         self.set_mysteries()
 
 
-    def fill_energy(self):
-        self.primordial_aura = self.real_stats["constitution"]*10
-
     def set_complex_stats(self):
-        self.complex_stats.update({ 
+        self.max_complex_stats = {
             "health": self.real_stats["vitality"]*7 + self.real_stats["constitution"]*3,
             "initiative": self.real_stats["dexterity"]*3 + self.real_stats["prediction"]*2,
-            "primordial_aura":self.real_stats["constitution"]*8 + self.real_stats["vitality"]*2,
+            "primordial_aura":self.real_stats["constitution"]*8 + self.real_stats["aura_density"]*2,
+        }
+        
+        self.complex_stats.update({ 
+            "health": self.max_complex_stats["health"],
+            "initiative": self.max_complex_stats["initiative"],
+            "primordial_aura":self.max_complex_stats["primordial_aura"],
             })
         # vitality = stamina regen
         # prediction = show enemy stats see traps 
@@ -114,25 +121,34 @@ class Creature():
         for mystery in self.passive_mysteries.values():
             if mystery.target == "self":
                 for target_stat, passive_strength in mystery.target_stat_and_strength.items():
-                    self.real_stats[target_stat] = passive_strength + self.base_stats[target_stat]
+                    if target_stat in self.real_stats:
+                        self.real_stats[target_stat] = passive_strength + self.base_stats[target_stat]
+                    else:
+                        self.complex_stats[target_stat] = passive_strength + self.max_complex_stats[target_stat]
 
 
     def set_conditions(self, mystery):
-        self.conditions.update({mystery.name: [mystery.target_stat_and_stregth, mystery.turn_count]})
+        self.conditions.update({mystery.name: [mystery.target_stat_and_strength, mystery.turn_count]})
     
 
-    def attack(self, target:object, mystery:object):
-        # target should be list and can be multiple targets
-        print("slm")
-        ...
+    
                 
     
-class Player(Creature):
+class Enemy(Creature):
     def __init__(self, name, vitality, aura_density, dexterity, constitution, prediction, weapon=None, mysteries=None) -> None:
         super().__init__(name, vitality, aura_density, dexterity, constitution, prediction, weapon, mysteries)
     
-    def __str__(self) -> str:
-        return self.name
+
+    def attack(self):
+        ...
+    
+    
+
+
+
+class Player(Creature):
+    def __init__(self, name, vitality, aura_density, dexterity, constitution, prediction, weapon=None, mysteries=None) -> None:
+        super().__init__(name, vitality, aura_density, dexterity, constitution, prediction, weapon, mysteries)
     
     def get_stats(self, is_attack = None):
         active_mysts = "\n".join([f"{count}==> {key}: {value.get_description()}" for count, (key, value) in enumerate(self.active_mysteries.items(), 1)]
@@ -148,14 +164,38 @@ class Player(Creature):
         else:
             return f"\n{self.name}'s info:\n\nReal stats: {self.real_stats}\nComplex stats: {self.complex_stats}\n\nPassive mysteries;\n{passive_mysts}\nActive mysteries;\n{active_mysts}"
         
+    def fill_energy(self):
+        self.primordial_aura = self.max_complex_stats["primordial_aura"]
+    
+    def forge_mystery_to_weapon(self, forged_mystery:list):
+        self.weapon.mysteries += forged_mystery
+        self.set_mysteries()
+    
+    def battle_action(self, target_entity:object, mystery:object):
+        # target should be list and can be multiple targets
+        if mystery.aura_cost >= self.complex_stats["primordial_aura"]:
+            return False
+        if mystery.turn_count:
+            ...
+        else:
+            for target_stat, attack_strength in mystery.target_stat_and_strength.items():
+                # check if target stat is complex stat
+                # instant attacks can just affect complex stats
+                if target_stat in self.complex_stats:
+                    target_entity.complex_stats[target_stat] += attack_strength
+                    self.complex_stats["primordial_aura"] -= mystery.aura_cost
+        ...
+        
 
-pure_soul = Mystery("Pure Soul", "self", {"aura_density":10}, False)
-ticker_skin = Mystery("Ticker Skin","self", {"constitution":10}, False)
-blackfire = Mystery("black fire", "enemy", {"health":-10}, True, 3)
-fireball = Mystery("fire ball", "enemy", {"health":-5}, True, 3)
+pure_soul = Mystery("Pure Soul", "self", {"aura_density":10}, 0, False)
+ticker_skin = Mystery("Ticker Skin","self", {"constitution":10}, 0, False)
+blackfire = Mystery("black fire", "enemy", {"health":-10}, 100, True, 3)
+fireball = Mystery("fire ball", "enemy", {"health":-5}, 50, True, 3)
+quick_slice =  Mystery("quick slice", "enemy", {"health":-25}, 150, True)
+little_blessing = Mystery("little blessing", "self", {"health":50}, 50, True)
 katana = Weapon("Katana", 5, [fireball])
 great_katana = Weapon("Great Katana", 10, [blackfire])
-player = Player("player", 15, 10, 10, 100, 8, katana, [ticker_skin]) 
+player = Player("player", 15, 10, 10, 50, 8, katana, [ticker_skin]) 
 
 
 #get player for batt_sys. as variable
@@ -163,7 +203,7 @@ def battle_system(player):
     # create a random creature / Sparkle-Goat - stubbornness
     enemies = []
     for _ in range(2): #change that number for set difficulty
-        enemies.append(Creature("Slime", 10, 20, 8, 100, 3, katana, [ticker_skin, fireball]))
+        enemies.append(Creature("Slime", 10, 20, 8, 50, 3, katana, [ticker_skin, fireball]))
 
     
     turn = 0
@@ -172,9 +212,8 @@ def battle_system(player):
         battle_queue = check_battle_queue(player, enemies)
 
         battle_ui(turn, player, battle_queue)
-        attack_system(turn, battle_queue)
+        battle_action_system(turn, battle_queue)
         
-        break
 
 
 def check_battle_queue(player, enemies):
@@ -199,30 +238,30 @@ def battle_ui(turn, player, battle_queue):
     input("Press Enter to continue...")
 
 
-def attack_system(turn, battle_queue):
+def battle_action_system(turn, battle_queue):
 
     #attack
     for battler in battle_queue:
         if battler.__class__.__name__ == "Player":
             enemy_queue = [enemy for enemy in battle_queue if enemy.__class__.__name__ != "Player"]
-            attack_ui(battler, enemy_queue)
+            battle_action_ui(battler, enemy_queue)
 
         else:
             ...
 
-def attack_ui(player, enemy_queue):
+def battle_action_ui(player, enemy_queue):
     while True:
         choice = input("""
         Take action:
         1 => Show info
-        2 => Attack
+        2 => Take Action
 
         action: """)
         print("----------")
         if choice == "1":   
             info_ui(player, enemy_queue)
         elif choice == "2":
-            attack_action(player, enemy_queue)
+            player_take_battle_action(player, enemy_queue)
             break
         
     # show info of player and enemies(prediction required) okay
@@ -241,7 +280,7 @@ def info_ui(player, enemy_queue):
     input("Press Enter to continue...")
 
 
-def attack_action(player, enemy_queue):
+def player_take_battle_action(player, enemy_queue):
     while True:
         choice = check_is_int_and_len_longty(input("Choose an Action:\n"+player.get_stats(True)[0]+"\nAction: "), len(player.active_mysteries))
         if choice:
@@ -251,13 +290,15 @@ def attack_action(player, enemy_queue):
                 while True:
                     target = check_is_int_and_len_longty(input(f"Choose a target:\n{enemies}Target: "), len(enemy_queue))
                     if target:
-                        player.attack(enemy_queue[target-1], chosen_mystery)
+                        successful_action = player.battle_action(enemy_queue[target-1], chosen_mystery)
                         break
+            elif chosen_mystery.target == "self":
+                successful_action = player.battle_action(player, chosen_mystery)
+                
+            if successful_action == None:
                 break
-            ...
-        # show active mysteries
-        # take target if requered
-    ...
+            else:
+                print("\nNot enough primordial aura!\n")
 
 
 
@@ -273,7 +314,7 @@ def check_is_int_and_len_longty(input, lenght = None):
         return False
     return input
 
-
-player.take_mystery([blackfire, pure_soul])
+player.forge_mystery_to_weapon([little_blessing])
+player.take_mystery([blackfire, pure_soul, quick_slice])
 battle_system(player)
 
