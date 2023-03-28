@@ -1,11 +1,12 @@
 class Mystery():
-    def __init__(self, name:str, target:str, target_stat_and_strength:dict, aura_cost:int, is_active:bool, turn_count = 0) -> None:
+    def __init__(self, name:str, target:str, target_stat_and_strength:dict, aura_cost:int, is_active:bool, turn_count = 0, permanence = False) -> None:
         self.name = name
         self.target = target
         self.target_stat_and_strength = target_stat_and_strength
         self.aura_cost = aura_cost
         self.is_active = is_active
         self.turn_count = turn_count
+        self.permanence = permanence
     
     def __str__(self) -> str:
         return self.name
@@ -66,9 +67,14 @@ class Creature():
         else:
             return f"\n{self.name}'s info:\n\nReal stats: {self.real_stats}\nComplex stats: {self.complex_stats}\n\nPassive mysteries;\n{passive_mysts}\nActive mysteries;\n{active_mysts}"
 
+    def set_conditions(self, mystery):
+        self.conditions.update({mystery.name: [mystery.target_stat_and_strength, mystery.turn_count]})
+
     def get_conditions(self):
         if not self.conditions:
             return "No conditions"
+        else:
+            return "\n"+"\n".join([f"{key}: {value[0]} for remeaning {value[1]} turns" for key, value in self.conditions.items()])
 
 
     def change_weapon(self, taken_weapon):
@@ -93,11 +99,11 @@ class Creature():
             "initiative": self.max_complex_stats["initiative"],
             "primordial_aura":self.max_complex_stats["primordial_aura"],
             })
-        # vitality = stamina regen
+        # vitality = aura regen in fight
         # prediction = show enemy stats see traps 
         # initiative = first attack and dodge
-        # dex = attack count
-        # constitution = stamina
+        # dex = attack count, crit chance (if prediction is higher than enemy)
+        # constitution = auro deposit
         # aura_density = mystery damage
 
 
@@ -118,17 +124,36 @@ class Creature():
         
     
     def activate_passive_skills(self):
+        passive_stat_placeholders = {"real_stats":{}, "complex_stats":{}} # to avoid changing stats while iterating
         for mystery in self.passive_mysteries.values():
             if mystery.target == "self":
                 for target_stat, passive_strength in mystery.target_stat_and_strength.items():
                     if target_stat in self.real_stats:
-                        self.real_stats[target_stat] = passive_strength + self.base_stats[target_stat]
-                    else:
-                        self.complex_stats[target_stat] = passive_strength + self.max_complex_stats[target_stat]
+                        target_stat_name_statement = "real_stats" if target_stat in self.real_stats else "complex_stats"
+
+                        if target_stat not in passive_stat_placeholders[target_stat_name_statement]:
+                            passive_stat_placeholders[target_stat_name_statement][target_stat] = passive_strength
+                        else:
+                            passive_stat_placeholders[target_stat_name_statement][target_stat] += passive_strength
+
+                for stat_name, stat_value in passive_stat_placeholders.items():
+                    for stat, value in stat_value.items():
+                        self.__dict__[stat_name][stat] = value + self.base_stats[stat] if stat_name == "real_stats" else value + self.max_complex_stats[stat]
+    
+    def activate_conditions(self):
+        conditions_stat_placeholders = {"real_stats":{}, "complex_stats":{}} # to avoid changing stats while iterating
+        for mystery_name, condition in self.conditions.items():
+            for target_stat, strength in condition[0].items():
+                if target_stat in self.real_stats:
+                    self.real_stats[target_stat] = strength + self.base_stats[target_stat]
+                else:
+                    self.complex_stats[target_stat] = strength + self.max_complex_stats[target_stat]
+            else:
+                self.conditions.pop(mystery_name)
+        ...
 
 
-    def set_conditions(self, mystery):
-        self.conditions.update({mystery.name: [mystery.target_stat_and_strength, mystery.turn_count]})
+    
     
 
     
@@ -139,8 +164,7 @@ class Enemy(Creature):
         super().__init__(name, vitality, aura_density, dexterity, constitution, prediction, weapon, mysteries)
     
 
-    def attack(self):
-        ...
+    ...
     
     
 
@@ -176,7 +200,7 @@ class Player(Creature):
         if mystery.aura_cost >= self.complex_stats["primordial_aura"]:
             return False
         if mystery.turn_count:
-            ...
+            target_entity.set_conditions(mystery)
         else:
             for target_stat, attack_strength in mystery.target_stat_and_strength.items():
                 # check if target stat is complex stat
@@ -186,13 +210,13 @@ class Player(Creature):
                     self.complex_stats["primordial_aura"] -= mystery.aura_cost
         ...
         
-
+pure_blood = Mystery("Pure Blood", "self", {"constitution":10}, 0, False)
 pure_soul = Mystery("Pure Soul", "self", {"aura_density":10}, 0, False)
-ticker_skin = Mystery("Ticker Skin","self", {"constitution":10}, 0, False)
-blackfire = Mystery("black fire", "enemy", {"health":-10}, 100, True, 3)
-fireball = Mystery("fire ball", "enemy", {"health":-5}, 50, True, 3)
+ticker_skin = Mystery("Ticker Skin","self", {"constitution":15}, 0, False)
+blackfire = Mystery("black fire", "enemy", {"health":-25}, 100, True, 3, True)
+fireball = Mystery("fire ball", "enemy", {"health":-10}, 50, True, 3, True)
 quick_slice =  Mystery("quick slice", "enemy", {"health":-25}, 150, True)
-little_blessing = Mystery("little blessing", "self", {"health":50}, 50, True)
+little_blessing = Mystery("little blessing", "self", {"health":50}, 50, True, 3, False)
 katana = Weapon("Katana", 5, [fireball])
 great_katana = Weapon("Great Katana", 10, [blackfire])
 player = Player("player", 15, 10, 10, 50, 8, katana, [ticker_skin]) 
@@ -314,7 +338,6 @@ def check_is_int_and_len_longty(input, lenght = None):
         return False
     return input
 
-player.forge_mystery_to_weapon([little_blessing])
+player.forge_mystery_to_weapon([little_blessing, pure_blood])
 player.take_mystery([blackfire, pure_soul, quick_slice])
 battle_system(player)
-
