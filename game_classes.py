@@ -12,14 +12,25 @@ class Mystery():
         return self.name
     
     def get_description(self):
-        # f"The intrepid adventurer {self.name} has set their sights on {self.target}! With {self.target_stat_and_strength} in their sights, they unleash a devastating attack that will last for {self.turn_count} turns." + Will their risky gambit pay off, or will they fall prey to the dangers lurking around every corner in that floor?
-        return f"{self.name} is targeting {self.target} with {self.target_stat_and_strength} until {self.turn_count} turns for cost of {self.aura_cost} aura"
-    
+        """
+        Creates and returns a string description of the Mystery,
+        detailing its target and effect, aura cost, and duration.
+        """
+        repeatable_info = "each " if self.permanence else ""
+        if self.turn_count:
+            duration = f"until {repeatable_info}remaining {self.turn_count} turns for a cost of {self.aura_cost} AURA"
+            if not self.permanence:
+                duration += " -Temporarily-"
+        else:
+            duration = ""
+
+        return f"Targets the {self.target} with {self.target_stat_and_strength} {duration}."
 
 class Weapon():
-    def __init__(self, name:str, weapon_strength:int, mysteries = []) -> None:
+    def __init__(self, name:str, aura_affinity:int, mysteries = []) -> None:
         self.name = name
-        self.weapon_strength = weapon_strength
+        # addition to the damage of used mystery which forged into the weapon
+        self.aura_affinity = aura_affinity
         self.mysteries = mysteries
         
 
@@ -29,10 +40,9 @@ class Weapon():
     def get_mysteries(self):
         return self.mysteries
 
-    
+
 
 class Creature():
-    
     def __init__(self,name, vitality, aura_density, dexterity, constitution, prediction, weapon=None, mysteries=None) -> None:
         self.name = name
 
@@ -100,13 +110,12 @@ class Creature():
             "primordial_aura":self.max_complex_stats["primordial_aura"],
             })
         # vitality = aura regen in fight
-        # prediction = show enemy stats see traps 
-        # initiative = first attack and dodge
-        # dex = attack count, crit chance (if prediction is higher than enemy)
+        # prediction = show enemy stats 
+        # initiative = first attack and 
         # constitution = auro deposit
         # aura_density = mystery damage
 
-
+    
     def set_mysteries(self):
         active_replacment = {}
         passive_replacment = {}
@@ -227,14 +236,14 @@ class Player(Creature):
                 if target_stat in self.complex_stats:
                     target_entity.complex_stats[target_stat] += attack_strength
                     self.complex_stats["primordial_aura"] -= mystery.aura_cost
-        ...
+                    
         
 pure_blood = Mystery("Pure Blood", "self", {"constitution":10}, 0, False)
 pure_soul = Mystery("Pure Soul", "self", {"aura_density":10}, 0, False)
 ticker_skin = Mystery("Ticker Skin","self", {"constitution":15}, 0, False)
 blackfire = Mystery("black fire", "enemy", {"health":-25}, 100, True, 3, True)
 fireball = Mystery("fire ball", "enemy", {"health":-10}, 50, True, 3, False)
-quick_slice =  Mystery("quick slice", "enemy", {"health":-25}, 150, True)
+quick_slice =  Mystery("quick slice", "enemy", {"health":-85}, 150, True)
 little_blessing = Mystery("little blessing", "self", {"health":50}, 50, True, 3, False)
 katana = Weapon("Katana", 5, [fireball])
 great_katana = Weapon("Great Katana", 10, [blackfire])
@@ -256,7 +265,7 @@ def battle_system(player):
         battle_queue = check_battle_queue(player, enemies)
 
         battle_ui(turn, player, battle_queue)
-        battle_action_system(turn, battle_queue)
+        battle_action_system(battle_queue)
         
 
 
@@ -288,7 +297,7 @@ def check_battlers_conditions(battle_queue):
             battler.activate_conditions()
     ...
 
-def battle_action_system(turn, battle_queue):
+def battle_action_system(battle_queue):
 
     #attack
     for battler in battle_queue:
@@ -313,12 +322,6 @@ def battle_action_ui(player, enemy_queue):
         elif choice == "2":
             player_take_battle_action(player, enemy_queue)
             break
-        
-    # show info of player and enemies(prediction required) okay
-    # take action
-        # show active mysteries
-            #take target if requered
-    ...
 
 
 def info_ui(player, enemy_queue):
