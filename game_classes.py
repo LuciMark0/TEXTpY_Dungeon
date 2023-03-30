@@ -1,3 +1,4 @@
+import random
 class Mystery():
     def __init__(self, name:str, target:str, target_stat_and_strength:dict, aura_cost:int, is_active:bool, turn_count = 0, permanence = False) -> None:
         self.name = name
@@ -78,7 +79,7 @@ class Creature():
             return f"\n{self.name}'s info:\n\nReal stats: {self.real_stats}\nComplex stats: {self.complex_stats}\n\nPassive mysteries;\n{passive_mysts}\nActive mysteries;\n{active_mysts}"
 
     def set_conditions(self, mystery):
-        self.conditions.update({mystery.name: [mystery.target_stat_and_strength, mystery.turn_count, mystery.permanence, {"is_activated": False}]})
+        self.conditions.update({mystery.name: [mystery.target_stat_and_strength , mystery.turn_count, mystery.permanence, {"is_activated": False}]})
 
     def get_conditions(self):
         if not self.conditions:
@@ -102,12 +103,14 @@ class Creature():
             "health": self.real_stats["vitality"]*7 + self.real_stats["constitution"]*3,
             "initiative": self.real_stats["dexterity"]*3 + self.real_stats["prediction"]*2,
             "primordial_aura":self.real_stats["constitution"]*8 + self.real_stats["aura_density"]*2,
+            "aura_regeneration": self.real_stats["vitality"]*3 - self.real_stats["aura_density"],
         }
         
         self.complex_stats.update({ 
             "health": self.max_complex_stats["health"],
             "initiative": self.max_complex_stats["initiative"],
             "primordial_aura":self.max_complex_stats["primordial_aura"],
+            "aura_regeneration": self.max_complex_stats["aura_regeneration"],
             })
         # vitality = aura regen in fight
         # prediction = show enemy stats 
@@ -160,11 +163,11 @@ class Creature():
                         condition[3]["is_activated"] = True
 
                     target_stat_name_statement = "real_stats" if target_stat in self.real_stats else "complex_stats"
-
+                    # add weapon aura affinity to condition strength
                     if target_stat not in conditions_stat_placeholders[target_stat_name_statement]:
-                            conditions_stat_placeholders[target_stat_name_statement][target_stat] = condition_strength
+                            conditions_stat_placeholders[target_stat_name_statement][target_stat] = condition_strength * (self.weapon.aura_affinity if self.weapon else 1)
                     else:
-                        conditions_stat_placeholders[target_stat_name_statement][target_stat] += condition_strength
+                        conditions_stat_placeholders[target_stat_name_statement][target_stat] += condition_strength * (self.weapon.aura_affinity if self.weapon else 1)
 
             for stat_name, stat_value in conditions_stat_placeholders.items():
                 for stat, value in stat_value.items():
@@ -184,7 +187,31 @@ class Creature():
                     self.__dict__[target_stat_name_statement][target_stat] -= condition_strength
 
                 del self.conditions[condition["mystery_name"]]
-    ...
+
+
+    def battle_action(self, target_entity:object, mystery:object):
+        # target should be list and can be multiple targets
+        if self.complex_stats["primordial_aura"] - mystery.aura_cost < 0:
+            return False
+        if mystery.turn_count:
+            target_entity.set_conditions(mystery)
+            self.complex_stats["primordial_aura"] -= mystery.aura_cost
+        else:
+            for target_stat, attack_strength in mystery.target_stat_and_strength.items():
+                # check if target stat is complex stat
+                # instant attacks can just affect complex stats
+                # add weapon aura affinity to attack strength
+                if target_stat in self.complex_stats:
+                    target_entity.complex_stats[target_stat] += attack_strength * (self.weapon.aura_affinity if self.weapon else 1)
+                    self.complex_stats["primordial_aura"] -= mystery.aura_cost
+    
+
+    def aura_regen(self):
+        self.complex_stats["primordial_aura"] += self.complex_stats["aura_regeneration"]
+        if self.complex_stats["primordial_aura"] > self.max_complex_stats["primordial_aura"]:
+            self.complex_stats["primordial_aura"] = self.max_complex_stats["primordial_aura"]
+    
+
 
 
     
@@ -192,9 +219,23 @@ class Creature():
 class Enemy(Creature):
     def __init__(self, name, vitality, aura_density, dexterity, constitution, prediction, weapon=None, mysteries=None) -> None:
         super().__init__(name, vitality, aura_density, dexterity, constitution, prediction, weapon, mysteries)
+        self.last_selected_mystery = None
     
 
-    ...
+    def select_mystery_for_battle(self, player):
+        selectable_mysteries = [mystery for mystery in self.active_mysteries.values() if mystery.aura_cost <= self.complex_stats["primordial_aura"]]
+        selected_mystery = random.choice(selectable_mysteries)
+        
+        while True:
+            if selected_mystery == self.last_selected_mystery and len(selectable_mysteries) > 1 and not selected_mystery.name in player.conditions.keys():
+                selected_mystery = random.choice(selectable_mysteries)
+            else:
+                break
+
+        self.last_selected_mystery = selected_mystery
+        return selected_mystery
+
+
     
     
 
@@ -216,28 +257,15 @@ class Player(Creature):
         else:
             return f"\n{self.name}'s info:\n\nReal stats: {self.real_stats}\nComplex stats: {self.complex_stats}\n\nPassive mysteries;\n{passive_mysts}\nActive mysteries;\n{active_mysts}"
         
-    def fill_energy(self):
+    def fill_aura(self):
         self.primordial_aura = self.max_complex_stats["primordial_aura"]
     
     def forge_mystery_to_weapon(self, forged_mystery:list):
         self.weapon.mysteries += forged_mystery
         self.set_mysteries()
     
-    def battle_action(self, target_entity:object, mystery:object):
-        # target should be list and can be multiple targets
-        if mystery.aura_cost >= self.complex_stats["primordial_aura"]:
-            return False
-        if mystery.turn_count:
-            target_entity.set_conditions(mystery)
-        else:
-            for target_stat, attack_strength in mystery.target_stat_and_strength.items():
-                # check if target stat is complex stat
-                # instant attacks can just affect complex stats
-                if target_stat in self.complex_stats:
-                    target_entity.complex_stats[target_stat] += attack_strength
-                    self.complex_stats["primordial_aura"] -= mystery.aura_cost
+    
                     
-        
 pure_blood = Mystery("Pure Blood", "self", {"constitution":10}, 0, False)
 pure_soul = Mystery("Pure Soul", "self", {"aura_density":10}, 0, False)
 ticker_skin = Mystery("Ticker Skin","self", {"constitution":15}, 0, False)
@@ -245,7 +273,7 @@ blackfire = Mystery("black fire", "enemy", {"health":-25}, 100, True, 3, True)
 fireball = Mystery("fire ball", "enemy", {"health":-10}, 50, True, 3, False)
 quick_slice =  Mystery("quick slice", "enemy", {"health":-85}, 150, True)
 little_blessing = Mystery("little blessing", "self", {"health":50}, 50, True, 3, False)
-katana = Weapon("Katana", 5, [fireball])
+katana = Weapon("Katana", 2, [fireball])
 great_katana = Weapon("Great Katana", 10, [blackfire])
 player = Player("player", 15, 10, 10, 50, 8, katana, [ticker_skin]) 
 
@@ -255,19 +283,28 @@ def battle_system(player):
     # create a random creature / Sparkle-Goat - stubbornness
     enemies = []
     for _ in range(2): #change that number for set difficulty
-        enemies.append(Creature("Slime", 10, 20, 8, 50, 3, katana, [ticker_skin, fireball]))
+        enemies.append(Enemy("Slime", 10, 20, 8, 50, 3, katana, [ticker_skin, quick_slice, blackfire]))
 
     
     turn = 0
     while True:
         turn += 1
-
+        enemies = check_healths(player, enemies)
         battle_queue = check_battle_queue(player, enemies)
-
         battle_ui(turn, player, battle_queue)
-        battle_action_system(battle_queue)
+        battle_action_system(battle_queue, player)
         
-
+def check_healths(player, enemies):
+    if player.complex_stats["health"] <= 0:
+        print("You died!")
+        return []
+    else:
+        enemies = [enemy for enemy in enemies if enemy.complex_stats["health"] > 0]
+        if enemies == []:
+            print("You won!")
+            ...
+            # add rewards etc.
+        return enemies
 
 def check_battle_queue(player, enemies):
     battlers = [[player.complex_stats["initiative"], player]]
@@ -297,16 +334,19 @@ def check_battlers_conditions(battle_queue):
             battler.activate_conditions()
     ...
 
-def battle_action_system(battle_queue):
+def battle_action_system(battle_queue, player):
 
     #attack
     for battler in battle_queue:
+        battler.aura_regen()
         if battler.__class__.__name__ == "Player":
             enemy_queue = [enemy for enemy in battle_queue if enemy.__class__.__name__ != "Player"]
             battle_action_ui(battler, enemy_queue)
 
         else:
-            ...
+            selected_mystery = battler.select_mystery_for_battle(player)
+            print(f"{battler.name} used {selected_mystery.name}!")
+            battler.battle_action(player if selected_mystery.target != "self" else battler, selected_mystery)
 
 def battle_action_ui(player, enemy_queue):
     while True:
