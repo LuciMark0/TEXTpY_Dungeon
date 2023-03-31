@@ -1,4 +1,4 @@
-from random import randint
+import random
 from game_classes import Mystery, Weapon, Player , Enemy
 # use tabulate to show stats
 
@@ -6,18 +6,24 @@ def main():
     global mapd
     level = 1
     mapd = get_map(level)
-    # player_name = input("Name: ")
-    # player = Creature(player_name,randint(5,15),randint(5,15),randint(50,150),randint(0,10))
+    # Set player
+    # name, constitution, dexterity, prediction, health, mana, weapon, mysteries
+    player_name = input("Enter player name: ")
+    player = Player(player_name, random.randint(5,15), random.randint(5,15), random.randint(5,15), 
+                            random.randint(35,55), random.randint(3,10), random.choice(starter_weapons),
+                            [random.choice(passive_mystery_storage), random.choice(active_mystery_storage),reaper])
+    stage = 0
     while True:
         event = movement_system()
-        event_system(event)
+        event_system(event, player, stage)
+        stage += 1
 
 # Set mysteries
 # name, target, effect, mana_cost, is_active, turns, is_passive
     #passive mysteries
-pure_blood = Mystery("Pure Blood", "self", {"constitution":10}, 0, False)
-pure_soul = Mystery("Pure Soul", "self", {"aura_density":10}, 0, False)
-ticker_skin = Mystery("Ticker Skin","self", {"constitution":15}, 0, False)
+pure_blood = Mystery("Pure Blood", "self", {"constitution":5}, 0, False)
+pure_soul = Mystery("Pure Soul", "self", {"aura_density":4}, 0, False)
+ticker_skin = Mystery("Ticker Skin","self", {"constitution":3}, 0, False)
 eagle_eye = Mystery("Eagle Eye", "self", {"prediction":2}, 0, False)
 improved_reflexes = Mystery("Improved Reflexes", "self", {"dexterity":3}, 0, False)
 overflowed_life = Mystery("Overflowed Life", "self", {"vitality":5}, 0, False)
@@ -37,9 +43,10 @@ poisened_stab = Mystery("poisened stab", "enemy", {"health":-20}, 35, True, 2, T
 bloody_slash = Mystery("bloody slash", "enemy", {"health":-40}, 110, True, 2, True)
 slowless = Mystery("slowless", "enemy", {"dexterity":-5}, 75, True, 2)
 dark_binding = Mystery("dark binding", "enemy", {"prediction":-3}, 60, True, 2)
+acid_blast = Mystery("acid blast", "enemy", {"health":-30}, 80, True, 2, True)
 
 turn_based_mystery_storage = [weak_aura_lock, blackfire, fireball, little_blessing, toxic_slash,
-                               aura_overload, poisened_stab, bloody_slash, slowless, dark_binding]
+                               aura_overload, poisened_stab, bloody_slash, slowless, dark_binding, acid_blast]
 
 
         #Instant mysteries
@@ -48,20 +55,24 @@ heavy_strike = Mystery("heavy strike", "enemy", {"health":-150}, 220, True)
 blunt_edge = Mystery("blunt edge", "enemy", {"health":-30}, 20, True)
 aura_blast = Mystery("aura blast", "enemy", {"health":-50}, 85, True)
 horizontal_slash = Mystery("horizontal slash", "enemy", {"health":-75}, 100, True)
-reaper = Mystery("reaper", "enemy", {"health":-200}, 300, True)
+reaper = Mystery("reaper", "enemy", {"health":-500}, 10, True) #gm only
 hearth_strike = Mystery("hearth strike", "enemy", {"health":-100}, 150, True)
 body_slam = Mystery("body slam", "enemy", {"health":-50}, 75, True)
 
-instant_mystery_storage = [quick_slice, heavy_strike, blunt_edge, aura_blast, horizontal_slash, reaper, hearth_strike, body_slam]
+instant_mystery_storage = [quick_slice, heavy_strike, blunt_edge, aura_blast, horizontal_slash, hearth_strike, body_slam]
 
-active_mtsrey_storage = turn_based_mystery_storage + instant_mystery_storage
-# Set weapons
-katana = Weapon("Katana", 2, [fireball])
-club = Weapon("Club", 1.1, [blunt_edge])
-great_katana = Weapon("Great Katana", 10, [blackfire])
+active_mystery_storage = turn_based_mystery_storage + instant_mystery_storage
 
-# Set player
-player = Player("player", 15, 10, 10, 50, 8, katana, [ticker_skin, little_blessing, reaper]) 
+# Set starter weapons
+katana = Weapon("Katana", 1.25, [horizontal_slash])
+twin_daggers = Weapon("Twin Daggers", 1.2, [toxic_slash, improved_reflexes])
+club = Weapon("Club", 1.1, [blunt_edge, body_slam])
+great_katana = Weapon("Great Katana", 1.5, [quick_slice, sturdy_aura])
+war_hammer = Weapon("War Hammer", 1.3, [heavy_strike, overflowed_life])
+
+starter_weapons = [katana, twin_daggers, club, great_katana, war_hammer]
+
+
 
 def get_map(level):
     levels = ("""
@@ -175,17 +186,14 @@ def get_way_choice(available_ways):
     * - Elite battle
     # - Boss battle
 """
-def event_system(event):
-    if event == "!":
-        battle_system(player)
+def event_system(event, player, stage):
+    if event in "! * #":
+        battle_system(player, stage, event)
 
-def battle_system(player):
+def battle_system(player, stage, event):
         # create a random creature / Sparkle-Goat - stubbornness
-        enemies = []
-        for _ in range(1): #change that number for set difficulty
-            enemies.append(Enemy("Slime", 10, 20, 8, 50, 3, katana, [ticker_skin, quick_slice, blackfire]))
-
-        
+        enemies = create_enemies(stage, event)
+    
         turn = 0
         while True:
             turn += 1
@@ -196,7 +204,26 @@ def battle_system(player):
             battle_queue = check_battle_queue(player, enemies)
             battle_ui(turn, player, battle_queue)
             battle_action_system(battle_queue, player)
-            
+
+def create_enemies(stage, event):
+    # take addtional variable to determine fights as elite, boss or normal 
+    enemies = []
+    if event == "!":
+        for _ in range(stage//2+1): #change that number for set difficulty
+            enemies.append(Enemy("Dungeon Crawler", random.randint(5,15), random.randint(5,15), random.randint(5,15),
+                                random.randint(35,55), random.randint(3,10), club,
+                                random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1)) + random.choices(passive_mystery_storage, k=random.randint(1,stage//2.5+1))))
+    elif event == "*":
+        enemies.append(Enemy("Archdemon Crawler", random.randint(15,25), random.randint(15,25), random.randint(15,25),
+                            random.randint(55,75), random.randint(5,15), club,
+                            random.choices(active_mystery_storage, k=random.randint(2,stage//2+2)) + random.choices(passive_mystery_storage, k=random.randint(2,stage//2+2))))
+    elif event == "#":
+        enemies.append(Enemy("Overlord of the dungeon", random.randint(25,35), random.randint(25,35), random.randint(25,35),
+                            random.randint(75,95), random.randint(7,20), club,
+                            random.choices(active_mystery_storage, k=random.randint(3,stage//2+3)) + random.choices(passive_mystery_storage, k=random.randint(3,stage//2+3))))
+
+    return enemies
+
 def check_healths(player, enemies):
     check_battlers_conditions([player] + [enemy for enemy in enemies])
 
@@ -211,8 +238,8 @@ def check_healths(player, enemies):
             # add rewards etc.
         return enemies
 
-def check_battlers_conditions(battle_queue):
-    for battler in battle_queue:
+def check_battlers_conditions(battlers):
+    for battler in battlers:
         if battler.conditions:
             battler.activate_conditions()
     
@@ -244,6 +271,9 @@ def battle_action_system(battle_queue, player):
 
     #attack
     for battler in battle_queue:
+        if battler.complex_stats["health"] <= 0:
+            continue
+
         battler.aura_regen()
         if battler.__class__.__name__ == "Player":
             enemy_queue = [enemy for enemy in battle_queue if enemy.__class__.__name__ != "Player"]
