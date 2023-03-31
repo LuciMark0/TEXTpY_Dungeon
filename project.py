@@ -11,19 +11,48 @@ def main():
     while True:
         event = movement_system()
         event_system(event)
+
 # Set mysteries
+# name, target, effect, mana_cost, is_active, turns, is_passive
+    #passive mysteries
 pure_blood = Mystery("Pure Blood", "self", {"constitution":10}, 0, False)
 pure_soul = Mystery("Pure Soul", "self", {"aura_density":10}, 0, False)
 ticker_skin = Mystery("Ticker Skin","self", {"constitution":15}, 0, False)
+eagle_eye = Mystery("Eagle Eye", "self", {"prediction":2}, 0, False)
+improved_reflexes = Mystery("Improved Reflexes", "self", {"dexterity":3}, 0, False)
+overflowed_life = Mystery("Overflowed Life", "self", {"vitality":5}, 0, False)
+sturdy_aura = Mystery("Sturdy Aura", "self", {"aura_density":3}, 0, False)
+
+    #active mysteries
+        #Turn based mysteries
+weak_aura_lock = Mystery("Weak Aura Lock", "enemy", {"primordial_aura":-75}, 50, True, 3)
 blackfire = Mystery("black fire", "enemy", {"health":-25}, 100, True, 3, True)
-fireball = Mystery("fire ball", "enemy", {"health":-10}, 50, True, 3, False)
-quick_slice =  Mystery("quick slice", "enemy", {"health":-85}, 150, True)
-little_blessing = Mystery("little blessing", "self", {"health":50}, 50, True, 3, False)
+fireball = Mystery("fire ball", "enemy", {"health":-10}, 50, True, 3, True)
+little_blessing = Mystery("little blessing", "self", {"health":50}, 50, True, 3)
+toxic_slash = Mystery("toxic slash", "enemy", {"health":-15}, 65, True, 3, True)
+aura_overload = Mystery("aura overload", "self", {"aura_density":5}, 100, True, 3)
+poisened_stab = Mystery("poisened stab", "enemy", {"health":-20}, 35, True, 2, True)
+bloody_slash = Mystery("bloody slash", "enemy", {"health":-40}, 110, True, 2, True)
+slowless = Mystery("slowless", "enemy", {"dexterity":-5}, 75, True, 2)
+dark_binding = Mystery("dark binding", "enemy", {"prediction":-3}, 60, True, 2)
+
+
+        #Instant mysteries
+quick_slice =  Mystery("quick slice", "enemy", {"health":-85}, 125, True)
+heavy_strike = Mystery("heavy strike", "enemy", {"health":-150}, 220, True)
+blunt_edge = Mystery("blunt edge", "enemy", {"health":-30}, 20, True)
+aura_blast = Mystery("aura blast", "enemy", {"health":-50}, 85, True)
+horizontal_slash = Mystery("horizontal slash", "enemy", {"health":-75}, 100, True)
+reaper = Mystery("reaper", "enemy", {"health":-200}, 300, True)
+hearth_strike = Mystery("hearth strike", "enemy", {"health":-100}, 150, True)
+body_slam = Mystery("body slam", "enemy", {"health":-50}, 75, True)
+
 # Set weapons
 katana = Weapon("Katana", 2, [fireball])
 great_katana = Weapon("Great Katana", 10, [blackfire])
+
 # Set player
-player = Player("player", 15, 10, 10, 50, 8, katana, [ticker_skin]) 
+player = Player("player", 15, 10, 10, 50, 8, katana, [ticker_skin, little_blessing]) 
 
 def get_map(level):
     levels = ("""
