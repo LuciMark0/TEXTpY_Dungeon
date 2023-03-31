@@ -23,6 +23,8 @@ improved_reflexes = Mystery("Improved Reflexes", "self", {"dexterity":3}, 0, Fal
 overflowed_life = Mystery("Overflowed Life", "self", {"vitality":5}, 0, False)
 sturdy_aura = Mystery("Sturdy Aura", "self", {"aura_density":3}, 0, False)
 
+passive_mystery_storage = [pure_blood, pure_soul, ticker_skin, eagle_eye, improved_reflexes, overflowed_life, sturdy_aura]
+
     #active mysteries
         #Turn based mysteries
 weak_aura_lock = Mystery("Weak Aura Lock", "enemy", {"primordial_aura":-75}, 50, True, 3)
@@ -36,6 +38,9 @@ bloody_slash = Mystery("bloody slash", "enemy", {"health":-40}, 110, True, 2, Tr
 slowless = Mystery("slowless", "enemy", {"dexterity":-5}, 75, True, 2)
 dark_binding = Mystery("dark binding", "enemy", {"prediction":-3}, 60, True, 2)
 
+turn_based_mystery_storage = [weak_aura_lock, blackfire, fireball, little_blessing, toxic_slash,
+                               aura_overload, poisened_stab, bloody_slash, slowless, dark_binding]
+
 
         #Instant mysteries
 quick_slice =  Mystery("quick slice", "enemy", {"health":-85}, 125, True)
@@ -47,12 +52,16 @@ reaper = Mystery("reaper", "enemy", {"health":-200}, 300, True)
 hearth_strike = Mystery("hearth strike", "enemy", {"health":-100}, 150, True)
 body_slam = Mystery("body slam", "enemy", {"health":-50}, 75, True)
 
+instant_mystery_storage = [quick_slice, heavy_strike, blunt_edge, aura_blast, horizontal_slash, reaper, hearth_strike, body_slam]
+
+active_mtsrey_storage = turn_based_mystery_storage + instant_mystery_storage
 # Set weapons
 katana = Weapon("Katana", 2, [fireball])
+club = Weapon("Club", 1.1, [blunt_edge])
 great_katana = Weapon("Great Katana", 10, [blackfire])
 
 # Set player
-player = Player("player", 15, 10, 10, 50, 8, katana, [ticker_skin, little_blessing]) 
+player = Player("player", 15, 10, 10, 50, 8, katana, [ticker_skin, little_blessing, reaper]) 
 
 def get_map(level):
     levels = ("""
@@ -173,13 +182,14 @@ def event_system(event):
 def battle_system(player):
         # create a random creature / Sparkle-Goat - stubbornness
         enemies = []
-        for _ in range(2): #change that number for set difficulty
+        for _ in range(1): #change that number for set difficulty
             enemies.append(Enemy("Slime", 10, 20, 8, 50, 3, katana, [ticker_skin, quick_slice, blackfire]))
 
         
         turn = 0
         while True:
             turn += 1
+            
             enemies = check_healths(player, enemies)
             if not enemies:
                 break
@@ -188,6 +198,8 @@ def battle_system(player):
             battle_action_system(battle_queue, player)
             
 def check_healths(player, enemies):
+    check_battlers_conditions([player] + [enemy for enemy in enemies])
+
     if player.complex_stats["health"] <= 0:
         print("You died!")
         exit()
@@ -198,6 +210,12 @@ def check_healths(player, enemies):
             player.complex_stats["primordial_aura"] = player.max_complex_stats["primordial_aura"]
             # add rewards etc.
         return enemies
+
+def check_battlers_conditions(battle_queue):
+    for battler in battle_queue:
+        if battler.conditions:
+            battler.activate_conditions()
+    
 
 def check_battle_queue(player, enemies):
     battlers = [[player.complex_stats["initiative"], player]]
@@ -210,7 +228,7 @@ def check_battle_queue(player, enemies):
 
 
 def battle_ui(turn, player, battle_queue):
-    check_battlers_conditions(battle_queue)
+    
     print(f"==========\n |turn {turn}|\n==========\n")
     print((f"{player.name} | Health: {player.complex_stats['health']} | Primordial Aura: {player.complex_stats['primordial_aura']} | Conditions: {player.get_conditions()}"))
     print("----------")
@@ -221,11 +239,6 @@ def battle_ui(turn, player, battle_queue):
     
     input("Press Enter to continue...")
 
-def check_battlers_conditions(battle_queue):
-    for battler in battle_queue:
-        if battler.conditions:
-            battler.activate_conditions()
-    ...
 
 def battle_action_system(battle_queue, player):
 
