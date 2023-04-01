@@ -1,5 +1,7 @@
 import random
+import os
 from game_classes import Mystery, Weapon, Player , Enemy
+
 # use tabulate to show stats
 
 def main():
@@ -7,9 +9,9 @@ def main():
     level = 1
     mapd = get_map(level)
     # Set player
-    # name, constitution, dexterity, prediction, health, mana, weapon, mysteries
+    # name, vitality, aura_density, dexterity, constitution, prediction, weapon, mysteries
     player_name = input("Enter player name: ")
-    player = Player(player_name, random.randint(5,15), random.randint(5,15), random.randint(5,15), 
+    player = Player(player_name, random.randint(5,15), random.randint(1,5), random.randint(5,15), 
                             random.randint(35,55), random.randint(3,10), random.choice(starter_weapons),
                             [random.choice(passive_mystery_storage), random.choice(active_mystery_storage),reaper])
     stage = 0
@@ -19,7 +21,7 @@ def main():
         stage += 1
 
 # Set mysteries
-# name, target, effect, mana_cost, is_active, turns, is_passive
+# name, target, effect, aura_cost, is_active, turns, is_active
     #passive mysteries
 pure_blood = Mystery("Pure Blood", "self", {"constitution":5}, 0, False)
 pure_soul = Mystery("Pure Soul", "self", {"aura_density":4}, 0, False)
@@ -70,6 +72,9 @@ club = Weapon("Club", 1.1, [blunt_edge, body_slam])
 great_katana = Weapon("Great Katana", 1.5, [quick_slice, sturdy_aura])
 war_hammer = Weapon("War Hammer", 1.3, [heavy_strike, overflowed_life])
 
+uchigatana = Weapon("Uchigatana", 1.75, [horizontal_slash, quick_slice, aura_overload, bloody_slash])
+dual_katanas = Weapon("Dual Katanas", 1.85, [toxic_slash, improved_reflexes, poisened_stab, weak_aura_lock])
+boss_weapons = [uchigatana, dual_katanas]
 starter_weapons = [katana, twin_daggers, club, great_katana, war_hammer]
 
 
@@ -106,6 +111,7 @@ def get_map(level):
 def movement_system():
     global mapd
     player_location = mapd.find("x")
+    os.system("clear")
     print(mapd)
 
     available_ways = check_ways(mapd,player_location)
@@ -198,7 +204,7 @@ def battle_system(player, stage, event):
         while True:
             turn += 1
             
-            enemies = check_healths(player, enemies)
+            enemies = check_healths(player, enemies, event, stage)
             if not enemies:
                 break
             battle_queue = check_battle_queue(player, enemies)
@@ -210,21 +216,22 @@ def create_enemies(stage, event):
     enemies = []
     if event == "!":
         for _ in range(stage//2+1): #change that number for set difficulty
-            enemies.append(Enemy("Dungeon Crawler", random.randint(5,15), random.randint(5,15), random.randint(5,15),
+            # name, vitality, aura_density, dexterity, constitution, prediction, weapon, mysteries 
+            enemies.append(Enemy("Dungeon Crawler", random.randint(5,15), random.randint(1,5), random.randint(5,15),
                                 random.randint(35,55), random.randint(3,10), club,
                                 random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1)) + random.choices(passive_mystery_storage, k=random.randint(1,stage//2.5+1))))
     elif event == "*":
-        enemies.append(Enemy("Archdemon Crawler", random.randint(15,25), random.randint(15,25), random.randint(15,25),
-                            random.randint(55,75), random.randint(5,15), club,
+        enemies.append(Enemy("Archdemon Crawler", random.randint(15,25), random.randint(3,8), random.randint(15,25),
+                            random.randint(55,75), random.randint(5,15), random.choice(starter_weapons),
                             random.choices(active_mystery_storage, k=random.randint(2,stage//2+2)) + random.choices(passive_mystery_storage, k=random.randint(2,stage//2+2))))
     elif event == "#":
-        enemies.append(Enemy("Overlord of the dungeon", random.randint(25,35), random.randint(25,35), random.randint(25,35),
-                            random.randint(75,95), random.randint(7,20), club,
+        enemies.append(Enemy("Overlord of the dungeon", random.randint(25,35), random.randint(5,10), random.randint(25,35),
+                            random.randint(75,95), random.randint(7,20), boss_weapons.pop(0),
                             random.choices(active_mystery_storage, k=random.randint(3,stage//2+3)) + random.choices(passive_mystery_storage, k=random.randint(3,stage//2+3))))
 
     return enemies
 
-def check_healths(player, enemies):
+def check_healths(player, enemies, event, stage):
     check_battlers_conditions([player] + [enemy for enemy in enemies])
 
     if player.complex_stats["health"] <= 0:
@@ -235,6 +242,52 @@ def check_healths(player, enemies):
         if enemies == []:
             print("You won!")
             player.complex_stats["primordial_aura"] = player.max_complex_stats["primordial_aura"]
+            weapon_mystery, weapon_affinity = [], 0
+            if event == "!":
+                dice = random.randint(1,100)
+                if dice > 30-stage:
+                    weapon_affinity = round(random.uniform(1, 1.3),1)
+                    weapon_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1))
+                elif dice > 80:
+                    player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1))
+                elif dice > 95:
+                    player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1)) + random.choices(passive_mystery_storage, k=random.randint(1,stage//2.5+1))
+                else:
+                    print("You found nothing.")
+            elif event == "*":
+                dice = random.randint(1,100)
+                if dice > 5:
+                    weapon_affinity = round(random.uniform(1.25, 1.5),1)
+                    weapon_mystery = random.choices(active_mystery_storage, k=random.randint(2,stage//2+2))
+                elif dice > 60:
+                    player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(2,stage//2+2))
+                elif dice > 88:
+                    player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(2,stage//2+2)) + random.choices(passive_mystery_storage, k=random.randint(2,stage//2+2))
+                else:
+                    print("You found nothing.")
+            elif event == "#":
+                dice = random.randint(1,100)
+                weapon_affinity = round(random.uniform(1.45, 1.8),1)
+                weapon_mystery = random.choices(active_mystery_storage, k=random.randint(3,stage//2+3))
+                if dice > 80:
+                    player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(3,stage//2+3))
+                elif dice > 95:
+                    player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(3,stage//2+3)) + random.choices(passive_mystery_storage, k=random.randint(3,stage//2+3))
+
+            if weapon_mystery:
+                os.system("clear")
+                print(f"\nYou found a new weapon with {weapon_affinity} affinity with {[mystery.name for mystery in weapon_mystery]} mystery.")
+                print(f"\nYour current weapon is {player.weapon.name} has {player.weapon.aura_affinity} affinity with {[mystery.name for mystery in player.weapon.mysteries]} mysteries.\n")
+                while decision:=input("Do you want to equip it? (y/n): "):
+                    if decision == "y":
+                        print("You equipped the new weapon.")
+                        player.change_weapon(Weapon("Gained_treasure", weapon_affinity, weapon_mystery)) 
+                        break
+                    elif decision == "n":
+                        break
+                    else:
+                        print("Wrong input. Try again.")
+            input("\nPress enter to continue.")
             # add rewards etc.
         return enemies
 
@@ -255,14 +308,15 @@ def check_battle_queue(player, enemies):
 
 
 def battle_ui(turn, player, battle_queue):
-    
+    os.system("clear")
     print(f"==========\n |turn {turn}|\n==========\n")
     print((f"{player.name} | Health: {player.complex_stats['health']} | Primordial Aura: {player.complex_stats['primordial_aura']} | Conditions: {player.get_conditions()}"))
-    print("----------")
+    print("─"*(len(player.name)+2))
     for enemy in battle_queue:
         if enemy.__class__.__name__ == "Player":
             continue
-        print(f"{enemy.name} | Health: {enemy.complex_stats['health']} | Primordial Aura: {enemy.complex_stats['primordial_aura']} | Conditions: {enemy.get_conditions()} \n")
+        print(f"{enemy.name} | Health: {enemy.complex_stats['health']} | Primordial Aura: {enemy.complex_stats['primordial_aura']} | Conditions: {enemy.get_conditions()}")
+        print("-"*(len(enemy.name)+2))
     
     input("Press Enter to continue...")
 
@@ -281,8 +335,14 @@ def battle_action_system(battle_queue, player):
 
         else:
             selected_mystery = battler.select_mystery_for_battle(player)
-            print(f"{battler.name} used {selected_mystery.name}!")
             battler.battle_action(player if selected_mystery.target != "self" else battler, selected_mystery)
+
+            current_target = player if selected_mystery.target != "self" else battler
+            current_target_stats = list(selected_mystery.target_stat_and_strength.keys())[0]
+            print(f"\n{battler.name} used {(selected_mystery.name).upper()} mystery with {selected_mystery.get_damage_amount(battler.aura_amplifier)}\n")
+            print(f"{current_target.name}'s current {current_target_stats}: {current_target.complex_stats[current_target_stats]}")
+            input("Press Enter to continue...")
+            
 
 def battle_action_ui(player, enemy_queue):
     while True:
@@ -301,6 +361,7 @@ def battle_action_ui(player, enemy_queue):
 
 
 def info_ui(player, enemy_queue):
+    os.system("clear")
     print(player.get_stats())
     print("----------")
     for enemy in enemy_queue:
@@ -315,9 +376,10 @@ def player_take_battle_action(player, enemy_queue):
         if choice:
             chosen_mystery = player.get_stats(True)[1][choice-1]
             if chosen_mystery.target == "enemy":
-                enemies = "".join([f"{count}==> {enemy.name}\n" for count, enemy in enumerate(enemy_queue, 1)])
+                enemies = "".join([f"{count}==> {enemy.name} | health:{enemy.complex_stats['health']}\n" for count, enemy in enumerate(enemy_queue, 1)])
                 while True:
                     target = check_is_int_and_len_longty(input(f"Choose a target:\n{enemies}Target: "), len(enemy_queue))
+                    os.system("clear")
                     if target:
                         successful_action = player.battle_action(enemy_queue[target-1], chosen_mystery)
                         break
