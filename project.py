@@ -2,7 +2,6 @@ import random
 import os
 from game_classes import Mystery, Weapon, Player , Enemy
 
-# use tabulate to show stats
 
 def main():
     global mapd
@@ -10,6 +9,7 @@ def main():
     mapd = get_map(level)
     # Set player
     # name, vitality, aura_density, dexterity, constitution, prediction, weapon, mysteries
+    print("Welcome to the Void Tower fellow!\n")
     player_name = input("Enter player name: ")
     player = Player(player_name, random.randint(5,15), random.randint(1,5), random.randint(5,15), 
                             random.randint(35,55), random.randint(3,10), random.choice(starter_weapons),
@@ -46,6 +46,7 @@ bloody_slash = Mystery("bloody slash", "enemy", {"health":-40}, 110, True, 2, Tr
 slowless = Mystery("slowless", "enemy", {"dexterity":-5}, 75, True, 2)
 dark_binding = Mystery("dark binding", "enemy", {"prediction":-3}, 60, True, 2)
 acid_blast = Mystery("acid blast", "enemy", {"health":-30}, 80, True, 2, True)
+energized_life = Mystery("energized life", "self", {"vitality":10}, 100, True, 2)
 
 turn_based_mystery_storage = [weak_aura_lock, blackfire, fireball, little_blessing, toxic_slash,
                                aura_overload, poisened_stab, bloody_slash, slowless, dark_binding, acid_blast]
@@ -66,11 +67,11 @@ instant_mystery_storage = [quick_slice, heavy_strike, blunt_edge, aura_blast, ho
 active_mystery_storage = turn_based_mystery_storage + instant_mystery_storage
 
 # Set starter weapons
-katana = Weapon("Katana", 1.25, [horizontal_slash])
-twin_daggers = Weapon("Twin Daggers", 1.2, [toxic_slash, improved_reflexes])
-club = Weapon("Club", 1.1, [blunt_edge, body_slam])
-great_katana = Weapon("Great Katana", 1.5, [quick_slice, sturdy_aura])
-war_hammer = Weapon("War Hammer", 1.3, [heavy_strike, overflowed_life])
+katana = Weapon("Katana", 1, [horizontal_slash])
+twin_daggers = Weapon("Twin Daggers", 1, [toxic_slash, improved_reflexes])
+club = Weapon("Club", 1, [blunt_edge, body_slam])
+great_katana = Weapon("Great Katana", 1, [quick_slice, sturdy_aura])
+war_hammer = Weapon("War Hammer", 1, [heavy_strike, overflowed_life])
 
 uchigatana = Weapon("Uchigatana", 1.75, [horizontal_slash, quick_slice, aura_overload, bloody_slash])
 dual_katanas = Weapon("Dual Katanas", 1.85, [toxic_slash, improved_reflexes, poisened_stab, weak_aura_lock])
@@ -193,8 +194,13 @@ def get_way_choice(available_ways):
     # - Boss battle
 """
 def event_system(event, player, stage):
+    os.system("clear")
     if event in "! * #":
         battle_system(player, stage, event)
+    elif event == "?":
+        random_event_system(player, stage)
+    elif event == "+":
+        campfire_system(player)
 
 def battle_system(player, stage, event):
         # create a random creature / Sparkle-Goat - stubbornness
@@ -235,11 +241,14 @@ def check_healths(player, enemies, event, stage):
     check_battlers_conditions([player] + [enemy for enemy in enemies])
 
     if player.complex_stats["health"] <= 0:
+        os.system("clear")
         print("You died!")
         exit()
     else:
         enemies = [enemy for enemy in enemies if enemy.complex_stats["health"] > 0]
         if enemies == []:
+            os.system("clear")
+            print("You survived the battle!")
             player.complex_stats["primordial_aura"] = player.max_complex_stats["primordial_aura"]
 
             weapon_mystery, weapon_affinity = [], 0
@@ -252,7 +261,8 @@ def check_healths(player, enemies, event, stage):
                     player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1))
                 elif dice > 30-stage:
                     weapon_affinity = round(random.uniform(1, 1.3),2)
-                    weapon_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1))         
+                    weapon_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1))
+                    create_random_weapon(player, weapon_affinity, weapon_mystery)     
                 else:
                     print("You found nothing.")
 
@@ -264,35 +274,36 @@ def check_healths(player, enemies, event, stage):
                 elif dice > 5:
                     weapon_affinity = round(random.uniform(1.25, 1.5),2)
                     weapon_mystery = random.choices(active_mystery_storage, k=random.randint(2,stage//2+2))
+                    create_random_weapon(player, weapon_affinity, weapon_mystery)
                 else:
                     print("You found nothing.")
 
             elif event == "#":
                 weapon_affinity = round(random.uniform(1.45, 1.8),2)
                 weapon_mystery = random.choices(active_mystery_storage, k=random.randint(3,stage//2+3))
-                if dice > 95:
+                create_random_weapon(player, weapon_affinity, weapon_mystery)
+                if dice > 80:
                     player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(3,stage//2+3)) + random.choices(passive_mystery_storage, k=random.randint(3,stage//2+3))
-                elif dice > 80:
+                elif dice > 45:
                     player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(3,stage//2+3))
-                
-
-            if weapon_mystery:
-                os.system("clear")
-                print("You won!\n")
-                print(f"\nYou found a new weapon with {weapon_affinity} affinity with {[mystery.name for mystery in weapon_mystery]} mystery.")
-                print(f"\nYour current weapon is {player.weapon.name} has {player.weapon.aura_affinity} affinity with {[mystery.name for mystery in player.weapon.mysteries]} mysteries.\n")
-                while decision:=input("Do you want to equip it? (y/n): "):
-                    if decision == "y":
-                        print("You equipped the new weapon.")
-                        player.change_weapon(Weapon("Gained_treasure", weapon_affinity, weapon_mystery)) 
-                        break
-                    elif decision == "n":
-                        break
-                    else:
-                        print("Wrong input. Try again.")
 
             input("\nPress enter to continue.")
         return enemies
+
+def create_random_weapon(player, weapon_affinity, weapon_mystery):
+    weapon_name = random.choice(["Short Sword", "Long Sword", "Axe", "Mace", "Flail", "Spear", "Trident", "Halberd", "Dagger", "Throwing Axe", "Throwing Knife", "Scimitar", "Katana", "Rapier", "Whip", "Club"])
+
+    print(f"\nYou found {weapon_name} with {weapon_affinity} affinity with {[mystery.name for mystery in weapon_mystery]} mystery.")
+    print(f"\nYour current weapon is {player.weapon.name} has {player.weapon.aura_affinity} affinity with {[mystery.name for mystery in player.weapon.mysteries]} mysteries.\n")
+    while decision:=input("Do you want to equip it? (y/n): "):
+        if decision == "y":
+            print("You equipped the new weapon.")
+            player.change_weapon(Weapon(weapon_name, weapon_affinity, weapon_mystery)) 
+            break
+        elif decision == "n":
+            break
+        else:
+            print("Wrong input. Try again.")
 
 def check_battlers_conditions(battlers):
     for battler in battlers:
@@ -356,12 +367,8 @@ def battle_action_system(battle_queue, player):
 
 def battle_action_ui(player, enemy_queue):
     while True:
-        choice = input("""
-        Take action:
-        1 => Show info
-        2 => Take Action
-
-        action: """)
+        os.system("clear")
+        choice = input("Take action:\n1 => Show info\n2 => Take Action\n\naction: ")
         print("----------")
         if choice == "1":   
             info_ui(player, enemy_queue)
@@ -381,6 +388,7 @@ def info_ui(player, enemy_queue):
 
 
 def player_take_battle_action(player, enemy_queue):
+    os.system("clear")
     while True:
         choice = check_is_int_and_len_longty(input("Choose an Action:\n"+player.get_stats(True)[0]+"\nAction: "), len(player.active_mysteries))
         if choice:
@@ -401,7 +409,43 @@ def player_take_battle_action(player, enemy_queue):
             else:
                 print("\nNot enough primordial aura!\n")
 
+def random_event_system(player, stage):
+    dice = random.randint(1, 100)
+    weapon_affinity = round(random.uniform(1.1, 1.5),2)
+    weapon_mystery = random.choices(active_mystery_storage, k=random.randint(2,stage//2+2))
+    if dice <= 35:
+        trap_activision(player, stage)
+        
+    elif dice <= 85:
+        trap_activision(player, stage)
+        create_random_weapon(player, weapon_affinity, weapon_mystery)
 
+    else:
+        create_random_weapon(player, weapon_affinity, weapon_mystery)
+        print("You have found a mystery!")
+        player.take_mystery([random.choice(passive_mystery_storage)])
+    
+def trap_activision(player, stage):
+    trap_perception = random.randint(1, 10)
+    trap_dexterity = random.randint(1, 20)
+    trap_initiative = trap_perception*2 + trap_dexterity*3
+    if trap_initiative > player.complex_stats["initiative"]:
+        trap_damage = random.randint(player.complex_stats["health"]//(20-stage//3), player.complex_stats["health"]//(7.5-stage//3))
+        player.complex_stats["health"] -= trap_damage
+        print(f"You have been ambushed by a trap!\nTrap deals {trap_damage} damage to you!")
+        print(f"{player.name}'s current Health: {player.complex_stats['health']}")
+        input("Press Enter to continue...")
+    else:
+        print("You have been ambushed by a trap!\nYou have successfully avoided the trap!")
+        input("Press Enter to continue...")
+
+    if player.complex_stats["health"] <= 0:
+        print("You have been killed by a trap!")
+        exit() 
+
+def campfire_system(player):
+    print(player.max_complex_stats["health"])
+    input("Press Enter to continue...")
 
 def check_is_int_and_len_longty(input, lenght = None):
     try:
