@@ -5,20 +5,27 @@ from game_classes import Mystery, Weapon, Player , Enemy
 
 def main():
     global mapd
-    level = 1
-    mapd = get_map(level)
+    
     # Set player
     # name, vitality, aura_density, dexterity, constitution, prediction, weapon, mysteries
     print("Welcome to the Void Tower fellow!\n")
     player_name = input("Enter player name: ")
     player = Player(player_name, random.randint(5,15), random.randint(1,5), random.randint(5,15), 
                             random.randint(35,55), random.randint(3,10), random.choice(starter_weapons),
-                            [random.choice(passive_mystery_storage), random.choice(active_mystery_storage),reaper])
+                            [random.choice(passive_mystery_storage), random.choice(active_mystery_storage),reaper,energized_life])
     stage = 0
+    level = 1
     while True:
-        event = movement_system()
-        event_system(event, player, stage)
-        stage += 1
+        mapd = get_map(level)
+        if mapd == "end":
+            print("You have reached the end of the tower!")
+            break
+        while True:
+            event = movement_system()
+            if event_system(event, player, stage):
+                break
+            stage += 1
+        level += 1
 
 # Set mysteries
 # name, target, effect, aura_cost, is_active, turns, is_active
@@ -94,19 +101,21 @@ def get_map(level):
 """,
 """
      ___________________________________________
-    |                                           
+    | ?            !       ?     !       +    # 
     |   ┌────────┐   ┌───┐   ┌─┐   ┌────────────
 ┌───┘   |________|   |___|   |_|   ├────────────
-|x                                              
+|x    !            ?       !     !   *   +    # 
 ├───┐   ┌────────────────┐   ┌─────┐   ┌────────
     |   |_________       |   |_____|   |        
-    |             |      |             |        
+    | !         * |      | !         * |        
     ├─────────┐   |      |   ┌─────┐   |        
               |   |______|   |_____|   |________
-              |                                 
+              | ?          !         !   +    # 
               ├─────────────────────────────────
 """
     )
+    if level > len(levels):
+        return "end"
     return levels[level-1][1:]
 
 def movement_system():
@@ -201,6 +210,12 @@ def event_system(event, player, stage):
         random_event_system(player, stage)
     elif event == "+":
         campfire_system(player)
+
+    if event == "#":
+        print("You have defeated the boss!")
+        print("You have conquer the floor!")
+        input("Press Enter to continue...")
+        return True
 
 def battle_system(player, stage, event):
         # create a random creature / Sparkle-Goat - stubbornness
@@ -444,7 +459,8 @@ def trap_activision(player, stage):
         exit() 
 
 def campfire_system(player):
-    print(player.max_complex_stats["health"])
+    player.complex_stats["health"] += player.max_complex_stats["health"]//2
+    print(f"You have rested at the campfire!\n{player.name}'s current Health: {player.complex_stats['health']}")
     input("Press Enter to continue...")
 
 def check_is_int_and_len_longty(input, lenght = None):
