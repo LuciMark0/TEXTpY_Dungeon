@@ -118,8 +118,12 @@ def get_map(level):
         return "end"
     return levels[level-1][1:]
 
-def movement_system():
+def movement_system(mapd_test = None):
     global mapd
+    #for testing
+    if mapd_test:
+        mapd = mapd_test
+    #----------------
     player_location = mapd.find("x")
     os.system("clear")
     print(mapd)
