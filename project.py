@@ -241,7 +241,7 @@ def check_healths(player, enemies, event, stage):
         enemies = [enemy for enemy in enemies if enemy.complex_stats["health"] > 0]
         if enemies == []:
             player.complex_stats["primordial_aura"] = player.max_complex_stats["primordial_aura"]
-            
+
             weapon_mystery, weapon_affinity = [], 0
             dice = random.randint(1,100)
 
@@ -251,7 +251,7 @@ def check_healths(player, enemies, event, stage):
                 elif dice > 80:
                     player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1))
                 elif dice > 30-stage:
-                    weapon_affinity = round(random.uniform(1, 1.3),1)
+                    weapon_affinity = round(random.uniform(1, 1.3),2)
                     weapon_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1))         
                 else:
                     print("You found nothing.")
@@ -262,13 +262,13 @@ def check_healths(player, enemies, event, stage):
                 elif dice > 60:
                     player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(2,stage//2+2))
                 elif dice > 5:
-                    weapon_affinity = round(random.uniform(1.25, 1.5),1)
+                    weapon_affinity = round(random.uniform(1.25, 1.5),2)
                     weapon_mystery = random.choices(active_mystery_storage, k=random.randint(2,stage//2+2))
                 else:
                     print("You found nothing.")
 
             elif event == "#":
-                weapon_affinity = round(random.uniform(1.45, 1.8),1)
+                weapon_affinity = round(random.uniform(1.45, 1.8),2)
                 weapon_mystery = random.choices(active_mystery_storage, k=random.randint(3,stage//2+3))
                 if dice > 95:
                     player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(3,stage//2+3)) + random.choices(passive_mystery_storage, k=random.randint(3,stage//2+3))
@@ -290,8 +290,8 @@ def check_healths(player, enemies, event, stage):
                         break
                     else:
                         print("Wrong input. Try again.")
+
             input("\nPress enter to continue.")
-            # add rewards etc.
         return enemies
 
 def check_battlers_conditions(battlers):
@@ -312,15 +312,22 @@ def check_battle_queue(player, enemies):
 
 def battle_ui(turn, player, battle_queue):
     os.system("clear")
-    print(f"==========\n |turn {turn}|\n==========\n")
-    print((f"{player.name} | Health: {player.complex_stats['health']} | Primordial Aura: {player.complex_stats['primordial_aura']} | Conditions: {player.get_conditions()}"))
-    print("─"*(len(player.name)+2))
+     # Print turn information
+    print(f"{'='*10}\n| Turn {turn} |\n{'='*10}\n")
+
+    # Print player status
+    print(f"{player.name} | Health: {player.complex_stats['health']} | " 
+          f"Primordial Aura: {player.complex_stats['primordial_aura']} | "
+          f"Conditions: {player.get_conditions()}\n"+"─"*(len(player.name)+2))
+
+    # Print enemies' status
     for enemy in battle_queue:
         if enemy.__class__.__name__ == "Player":
             continue
-        print(f"{enemy.name} | Health: {enemy.complex_stats['health']} | Primordial Aura: {enemy.complex_stats['primordial_aura']} | Conditions: {enemy.get_conditions()}")
-        print("-"*(len(enemy.name)+2))
-    
+        print(f"{enemy.name} | Health: {enemy.complex_stats['health']} | "
+              f"Primordial Aura: {enemy.complex_stats['primordial_aura']} | "
+              f"Conditions: {enemy.get_conditions()}\n"+"-"*(len(enemy.name)+2))
+        
     input("Press Enter to continue...")
 
 
@@ -343,7 +350,7 @@ def battle_action_system(battle_queue, player):
             current_target = player if selected_mystery.target != "self" else battler
             current_target_stats = list(selected_mystery.target_stat_and_strength.keys())[0]
             print(f"\n{battler.name} used {(selected_mystery.name).upper()} mystery with {selected_mystery.get_damage_amount(battler.aura_amplifier)}\n")
-            print(f"{current_target.name}'s current {current_target_stats}: {current_target.complex_stats[current_target_stats]}")
+            print(f"{current_target.name}'s current {current_target_stats}: {current_target.complex_stats[current_target_stats] if current_target_stats in current_target.complex_stats else current_target.real_stats[current_target_stats]}")
             input("Press Enter to continue...")
             
 
