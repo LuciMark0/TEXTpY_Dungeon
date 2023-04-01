@@ -1,4 +1,6 @@
 import random
+
+
 class Mystery():
     def __init__(self, name:str, target:str, target_stat_and_strength:dict, aura_cost:int, is_active:bool, turn_count = 0, permanence = False) -> None:
         self.name = name
@@ -12,7 +14,10 @@ class Mystery():
     def __str__(self) -> str:
         return self.name
     
-    def get_description(self):
+    def get_damage_amount(self, aura_amplifier):
+        return f"{list(self.target_stat_and_strength.keys())[0]}:{int(list(self.target_stat_and_strength.values())[0]*aura_amplifier)}"
+
+    def get_description(self, aura_amplifier = 1):
         """
         Creates and returns a string description of the Mystery,
         detailing its target and effect, aura cost, and duration.
@@ -23,9 +28,11 @@ class Mystery():
             if not self.permanence:
                 duration += " -Temporarily-"
         else:
-            duration = ""
+            duration = f"for a cost of {self.aura_cost} AURA"
+        effect = [f"deals {int(value*aura_amplifier)} damage to {key}" for key, value in self.target_stat_and_strength.items()][0]
+        return f"Targets the {self.target} with {effect} {duration}."
 
-        return f"Targets the {self.target} with {self.target_stat_and_strength} {duration}."
+
 
 class Weapon():
     def __init__(self, name:str, aura_affinity:int, mysteries = []) -> None:
@@ -44,9 +51,9 @@ class Weapon():
 
 
 class Creature():
-    def __init__(self,name, vitality, aura_density, dexterity, constitution, prediction, weapon=None, mysteries=None) -> None:
+    def __init__(self,name, vitality, aura_density, dexterity, constitution, prediction, weapon = None, mysteries=None) -> None:
         self.name = name
-
+        
         self.base_stats = {  "vitality": vitality, "aura_density": aura_density,
                              "dexterity": dexterity, "constitution": constitution,
                              "prediction":prediction}
@@ -56,7 +63,7 @@ class Creature():
         self.set_complex_stats()
 
         self.weapon = weapon
-
+        self.set_aura_amplifier()
         self.mystery_dict = {mystery.name:mystery for mystery in mysteries if mysteries}
         self.set_mysteries()
 
@@ -67,16 +74,16 @@ class Creature():
 
     def get_stats(self, player_prediction):
         # order mysteries in str to look better
-        active_mysts = "\n".join([f"{key}: {value.get_description()}" for key, value in self.active_mysteries.items()]) + "\n"
+        active_mysts = "\n".join([f"{key}: {value.get_description(self.aura_amplifier)}" for key, value in self.active_mysteries.items()]) + "\n"
         passive_mysts = "\n".join([f"{key}: {value.get_description()}" for key, value in self.passive_mysteries.items() 
                                     if self.passive_mysteries]) + "\n"
         
         if player_prediction < self.real_stats["prediction"]-2:
-            return f"{self.name} is hiding"
+            return f"{self.name} is hiding from prying eyes!"
         elif self.real_stats["prediction"]+2 >= player_prediction >= self.real_stats["prediction"]-2:
-            return f"{self.name}'s info:\nReal stats: {self.real_stats}\nComplex stats: {self.complex_stats}"
+            return f"{self.name}'s info:\nReal stats: {self.real_stats}\nComplex stats: {self.complex_stats}\nWeapon: {self.weapon} with {self.weapon.aura_affinity} aura affinity"
         else:
-            return f"\n{self.name}'s info:\n\nReal stats: {self.real_stats}\nComplex stats: {self.complex_stats}\n\nPassive mysteries;\n{passive_mysts}\nActive mysteries;\n{active_mysts}"
+            return f"\n{self.name}'s info:\n\nReal stats: {self.real_stats}\nComplex stats: {self.complex_stats}Weapon: {self.weapon} with {self.weapon.aura_affinity} aura affinity\n\nPassive mysteries;\n{passive_mysts}\nActive mysteries;\n{active_mysts}"
 
     def set_conditions(self, mystery):
         self.conditions.update({mystery.name: [mystery.target_stat_and_strength , mystery.turn_count, mystery.permanence, {"is_activated": False}]})
@@ -87,13 +94,17 @@ class Creature():
         else:
             return "\n"+"\n".join([f"{key}: {value[0]} for remeaning {value[1]} turns" + (" -temporarily-" if not value[2] else "") for key, value in self.conditions.items()])
 
+    def set_aura_amplifier(self):
+        self.aura_amplifier = (self.weapon.aura_affinity if self.weapon.aura_affinity <= self.real_stats["aura_density"] else self.real_stats["aura_density"]) if self.weapon else 1
 
     def change_weapon(self, taken_weapon):
         self.weapon = taken_weapon
         self.set_mysteries()
+        self.set_aura_amplifier()
 
 
     def take_mystery(self, taken_mystery):
+        print(f"{self.name} gain {taken_mystery} mystery")
         self.mystery_dict.update({mystery.name: mystery for mystery in taken_mystery})
         self.set_mysteries()
 
@@ -165,9 +176,9 @@ class Creature():
                     target_stat_name_statement = "real_stats" if target_stat in self.real_stats else "complex_stats"
                     # add weapon aura affinity to condition strength
                     if target_stat not in conditions_stat_placeholders[target_stat_name_statement]:
-                            conditions_stat_placeholders[target_stat_name_statement][target_stat] = int(condition_strength * (self.weapon.aura_affinity if self.weapon else 1))
+                            conditions_stat_placeholders[target_stat_name_statement][target_stat] = int(condition_strength * (self.aura_amplifier))
                     else:
-                        conditions_stat_placeholders[target_stat_name_statement][target_stat] += int(condition_strength * (self.weapon.aura_affinity if self.weapon else 1))
+                        conditions_stat_placeholders[target_stat_name_statement][target_stat] += int(condition_strength * (self.aura_amplifier))
 
             for stat_name, stat_value in conditions_stat_placeholders.items():
                 for stat, value in stat_value.items():
@@ -201,7 +212,7 @@ class Creature():
                 # instant attacks can just affect complex stats
                 # add weapon aura affinity to attack strength
                 if target_stat in self.complex_stats:
-                    target_entity.complex_stats[target_stat] += int(attack_strength * (self.weapon.aura_affinity if self.weapon else 1))
+                    target_entity.complex_stats[target_stat] += int(attack_strength * (self.aura_amplifier))
                     self.complex_stats["primordial_aura"] -= mystery.aura_cost
     
 
@@ -209,10 +220,6 @@ class Creature():
         self.complex_stats["primordial_aura"] += self.complex_stats["aura_regeneration"]
         if self.complex_stats["primordial_aura"] > self.max_complex_stats["primordial_aura"]:
             self.complex_stats["primordial_aura"] = self.max_complex_stats["primordial_aura"]
-    
-
-
-
     
         
 class Enemy(Creature):
@@ -235,17 +242,14 @@ class Enemy(Creature):
         return selected_mystery
 
 
-    
-    
-
 class Player(Creature):
     def __init__(self, name, vitality, aura_density, dexterity, constitution, prediction, weapon=None, mysteries=None) -> None:
         super().__init__(name, vitality, aura_density, dexterity, constitution, prediction, weapon, mysteries)
     
     def get_stats(self, is_attack = None):
-        active_mysts = "\n".join([f"{count}==> {key}: {value.get_description()}" for count, (key, value) in enumerate(self.active_mysteries.items(), 1)]
+        active_mysts = "\n".join([f"{count}==> {key}: {value.get_description(self.aura_amplifier)}" for count, (key, value) in enumerate(self.active_mysteries.items(), 1)]
                                     if is_attack
-                                else [f"{key}: {value.get_description()}" for key, value in self.active_mysteries.items()]) + "\n"
+                                else [f"{key}: {value.get_description(self.aura_amplifier)}" for key, value in self.active_mysteries.items()]) + "\n"
         
         passive_mysts = "\n".join([f"{key}: {value.get_description()}" for key, value in self.passive_mysteries.items()
                                     if self.passive_mysteries]) + "\n"
