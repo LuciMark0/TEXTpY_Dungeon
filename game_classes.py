@@ -108,7 +108,7 @@ class Creature():
         input("Press enter to continue...")
         self.mystery_dict.update({mystery.name: mystery for mystery in taken_mystery})
         self.set_mysteries()
-    
+            
 
     def set_complex_stats(self):
         self.max_complex_stats = {
@@ -130,7 +130,12 @@ class Creature():
         # constitution = auro deposit
         # aura_density = mystery damage
 
-    
+    def calculate_in_battle_complex_stats(self):
+        self.complex_stats.update({ 
+            "initiative": self.real_stats["dexterity"]*3 + self.real_stats["prediction"]*2,
+            "aura_regeneration": self.real_stats["vitality"]*3 - self.real_stats["aura_density"],
+            })
+
     def set_mysteries(self):
         active_replacment = {}
         passive_replacment = {}
@@ -184,7 +189,8 @@ class Creature():
             for stat_name, stat_value in conditions_stat_placeholders.items():
                 for stat, value in stat_value.items():
                     self.__dict__[stat_name][stat] = value + self.real_stats[stat] if stat_name == "real_stats" else value + self.complex_stats[stat]
-
+                    if stat_name == "real_stats":
+                        self.calculate_in_battle_complex_stats
             finished_conditions = []
             for mystery_name, condition in self.conditions.items():
                 condition[1] -= 1
