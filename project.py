@@ -240,42 +240,45 @@ def check_healths(player, enemies, event, stage):
     else:
         enemies = [enemy for enemy in enemies if enemy.complex_stats["health"] > 0]
         if enemies == []:
-            print("You won!")
             player.complex_stats["primordial_aura"] = player.max_complex_stats["primordial_aura"]
+            
             weapon_mystery, weapon_affinity = [], 0
+            dice = random.randint(1,100)
+
             if event == "!":
-                dice = random.randint(1,100)
-                if dice > 30-stage:
-                    weapon_affinity = round(random.uniform(1, 1.3),1)
-                    weapon_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1))
+                if dice > 95:
+                    player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1)) + random.choices(passive_mystery_storage, k=random.randint(1,stage//2.5+1))
                 elif dice > 80:
                     player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1))
-                elif dice > 95:
-                    player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1)) + random.choices(passive_mystery_storage, k=random.randint(1,stage//2.5+1))
+                elif dice > 30-stage:
+                    weapon_affinity = round(random.uniform(1, 1.3),1)
+                    weapon_mystery = random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1))         
                 else:
                     print("You found nothing.")
+
             elif event == "*":
-                dice = random.randint(1,100)
-                if dice > 5:
-                    weapon_affinity = round(random.uniform(1.25, 1.5),1)
-                    weapon_mystery = random.choices(active_mystery_storage, k=random.randint(2,stage//2+2))
+                if dice > 88:
+                    player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(2,stage//2+2)) + random.choices(passive_mystery_storage, k=random.randint(2,stage//2+2))
                 elif dice > 60:
                     player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(2,stage//2+2))
-                elif dice > 88:
-                    player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(2,stage//2+2)) + random.choices(passive_mystery_storage, k=random.randint(2,stage//2+2))
+                elif dice > 5:
+                    weapon_affinity = round(random.uniform(1.25, 1.5),1)
+                    weapon_mystery = random.choices(active_mystery_storage, k=random.randint(2,stage//2+2))
                 else:
                     print("You found nothing.")
+
             elif event == "#":
-                dice = random.randint(1,100)
                 weapon_affinity = round(random.uniform(1.45, 1.8),1)
                 weapon_mystery = random.choices(active_mystery_storage, k=random.randint(3,stage//2+3))
-                if dice > 80:
-                    player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(3,stage//2+3))
-                elif dice > 95:
+                if dice > 95:
                     player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(3,stage//2+3)) + random.choices(passive_mystery_storage, k=random.randint(3,stage//2+3))
+                elif dice > 80:
+                    player.taken_mystery = random.choices(active_mystery_storage, k=random.randint(3,stage//2+3))
+                
 
             if weapon_mystery:
                 os.system("clear")
+                print("You won!\n")
                 print(f"\nYou found a new weapon with {weapon_affinity} affinity with {[mystery.name for mystery in weapon_mystery]} mystery.")
                 print(f"\nYour current weapon is {player.weapon.name} has {player.weapon.aura_affinity} affinity with {[mystery.name for mystery in player.weapon.mysteries]} mysteries.\n")
                 while decision:=input("Do you want to equip it? (y/n): "):
