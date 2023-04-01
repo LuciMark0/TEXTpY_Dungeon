@@ -104,10 +104,11 @@ class Creature():
 
 
     def take_mystery(self, taken_mystery):
-        print(f"{self.name} gain {taken_mystery} mystery")
+        print(f"{self.name} gain {[mystery.name for mystery in taken_mystery]} mystery")
+        input("Press enter to continue...")
         self.mystery_dict.update({mystery.name: mystery for mystery in taken_mystery})
         self.set_mysteries()
-
+    
 
     def set_complex_stats(self):
         self.max_complex_stats = {
@@ -258,7 +259,9 @@ class Player(Creature):
             mysts_classes = [value for value in self.active_mysteries.values()]
             return [active_mysts, mysts_classes]
         else:
-            return f"\n{self.name}'s info:\n\nReal stats: {self.real_stats}\nComplex stats: {self.complex_stats}\n\nPassive mysteries;\n{passive_mysts}\nActive mysteries;\n{active_mysts}"
+            description = f"\n{self.name}'s info:\n\nReal stats: {self.real_stats}\nComplex stats: {self.complex_stats}\n"
+            description += f"\nWeapon: {self.weapon.name} with {self.weapon.aura_affinity} aura_affinity\n\nPassive mysteries;\n{passive_mysts}\nActive mysteries;\n{active_mysts}"
+            return description
         
     def fill_aura(self):
         self.primordial_aura = self.max_complex_stats["primordial_aura"]
