@@ -69,7 +69,7 @@ horizontal_slash = Mystery("horizontal slash", "enemy", {"health":-75}, 100, Tru
 reaper = Mystery("reaper", "enemy", {"health":-500}, 10, True) #gm only
 hearth_strike = Mystery("hearth strike", "enemy", {"health":-100}, 150, True)
 body_slam = Mystery("body slam", "enemy", {"health":-50}, 75, True)
-exhaustion_curse = Mystery("exhaustion curse", "enemy", {"primordial_aura":125}, 100, True)
+exhaustion_curse = Mystery("exhaustion curse", "enemy", {"primordial_aura":-125}, 100, True)
 double_strike = Mystery("double strike", "enemy", {"health":-100}, 140, True)
 
 
