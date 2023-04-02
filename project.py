@@ -10,9 +10,9 @@ def main():
     # name, vitality, aura_density, dexterity, constitution, prediction, weapon, mysteries
     print("Welcome to the Void Tower fellow!\n")
     player_name = input("Enter player name: ")
-    player = Player(player_name, random.randint(5,15), random.randint(1,5), random.randint(5,15), 
-                            random.randint(35,55), random.randint(3,10), random.choice(starter_weapons),
-                            [random.choice(passive_mystery_storage), random.choice(active_mystery_storage),reaper,energized_life])
+    player = Player(player_name, random.randint(8,15), random.uniform(1,1.25), random.randint(8,12), 
+                            random.randint(35,55), random.randint(3,8), random.choice(starter_weapons),
+                            [random.choice(passive_mystery_storage), random.choice(instant_mystery_storage), random.choice(turn_based_mystery_storage)])
     stage = 0
     level = 1
     while True:
@@ -34,20 +34,21 @@ pure_blood = Mystery("Pure Blood", "self", {"constitution":5}, 0, False)
 pure_soul = Mystery("Pure Soul", "self", {"aura_density":4}, 0, False)
 ticker_skin = Mystery("Ticker Skin","self", {"constitution":3}, 0, False)
 eagle_eye = Mystery("Eagle Eye", "self", {"prediction":2}, 0, False)
+overflowed_aura = Mystery("Overflowed Aura", "self", {"aura_density":0.25}, 0, False)
 improved_reflexes = Mystery("Improved Reflexes", "self", {"dexterity":3}, 0, False)
 overflowed_life = Mystery("Overflowed Life", "self", {"vitality":5}, 0, False)
 sturdy_aura = Mystery("Sturdy Aura", "self", {"aura_density":3}, 0, False)
 
-passive_mystery_storage = [pure_blood, pure_soul, ticker_skin, eagle_eye, improved_reflexes, overflowed_life, sturdy_aura]
+passive_mystery_storage = [pure_blood, pure_soul, ticker_skin, eagle_eye, improved_reflexes, overflowed_life, sturdy_aura, overflowed_aura]
 
     #active mysteries
         #Turn based mysteries
 weak_aura_lock = Mystery("Weak Aura Lock", "enemy", {"primordial_aura":-75}, 50, True, 3)
 blackfire = Mystery("black fire", "enemy", {"health":-25}, 100, True, 3, True)
 fireball = Mystery("fire ball", "enemy", {"health":-10}, 50, True, 3, True)
-little_blessing = Mystery("little blessing", "self", {"health":50}, 50, True, 3)
+little_blessing = Mystery("little blessing", "self", {"health":50}, 100, True, 3, True)
 toxic_slash = Mystery("toxic slash", "enemy", {"health":-15}, 65, True, 3, True)
-aura_overload = Mystery("aura overload", "self", {"aura_density":5}, 100, True, 3)
+aura_burst = Mystery("aura burst", "self", {"aura_density":1.5}, 75, True, 3)
 poisened_stab = Mystery("poisened stab", "enemy", {"health":-20}, 35, True, 2, True)
 bloody_slash = Mystery("bloody slash", "enemy", {"health":-40}, 110, True, 2, True)
 slowless = Mystery("slowless", "enemy", {"dexterity":-5}, 75, True, 2)
@@ -56,7 +57,7 @@ acid_blast = Mystery("acid blast", "enemy", {"health":-30}, 80, True, 2, True)
 energized_life = Mystery("energized life", "self", {"vitality":10}, 100, True, 2)
 
 turn_based_mystery_storage = [weak_aura_lock, blackfire, fireball, little_blessing, toxic_slash,
-                               aura_overload, poisened_stab, bloody_slash, slowless, dark_binding, acid_blast]
+                               poisened_stab, bloody_slash, slowless, dark_binding, acid_blast, aura_burst, energized_life]
 
 
         #Instant mysteries
@@ -68,8 +69,11 @@ horizontal_slash = Mystery("horizontal slash", "enemy", {"health":-75}, 100, Tru
 reaper = Mystery("reaper", "enemy", {"health":-500}, 10, True) #gm only
 hearth_strike = Mystery("hearth strike", "enemy", {"health":-100}, 150, True)
 body_slam = Mystery("body slam", "enemy", {"health":-50}, 75, True)
+exhaustion_curse = Mystery("exhaustion curse", "enemy", {"primordial_aura":125}, 100, True)
+double_strike = Mystery("double strike", "enemy", {"health":-100}, 140, True)
 
-instant_mystery_storage = [quick_slice, heavy_strike, blunt_edge, aura_blast, horizontal_slash, hearth_strike, body_slam]
+
+instant_mystery_storage = [quick_slice, heavy_strike, blunt_edge, aura_blast, horizontal_slash, hearth_strike, body_slam, exhaustion_curse, double_strike]
 
 active_mystery_storage = turn_based_mystery_storage + instant_mystery_storage
 
@@ -80,7 +84,7 @@ club = Weapon("Club", 1, [blunt_edge, body_slam])
 great_katana = Weapon("Great Katana", 1, [quick_slice, sturdy_aura])
 war_hammer = Weapon("War Hammer", 1, [heavy_strike, overflowed_life])
 
-uchigatana = Weapon("Uchigatana", 1.75, [horizontal_slash, quick_slice, aura_overload, bloody_slash])
+uchigatana = Weapon("Uchigatana", 1.75, [horizontal_slash, quick_slice, bloody_slash, weak_aura_lock])
 dual_katanas = Weapon("Dual Katanas", 1.85, [toxic_slash, improved_reflexes, poisened_stab, weak_aura_lock])
 boss_weapons = [uchigatana, dual_katanas]
 starter_weapons = [katana, twin_daggers, club, great_katana, war_hammer]
@@ -231,6 +235,12 @@ def battle_system(player, stage, event):
             
             enemies = check_healths(player, enemies, event, stage)
             if not enemies:
+                dice = random.randint(1,100)
+                if dice > 65:
+                    old_health = player.complex_stats["health"]
+                    player.complex_stats["health"] += player.max_complex_stats["health"]//3
+                    print(f"An Unknown Goddes blessed you with life essence due to your victory!\n{player.name}'s Health:{old_health} ==> {player.complex_stats['health']}")
+                    input("Press Enter to continue...")
                 break
             battle_queue = check_battle_queue(player, enemies)
             battle_ui(turn, player, battle_queue)
@@ -242,16 +252,16 @@ def create_enemies(stage, event):
     if event == "!":
         for _ in range(stage//2+1): #change that number for set difficulty
             # name, vitality, aura_density, dexterity, constitution, prediction, weapon, mysteries 
-            enemies.append(Enemy("Dungeon Crawler", random.randint(5,15), random.randint(1,5), random.randint(5,15),
-                                random.randint(35,55), random.randint(3,10), club,
+            enemies.append(Enemy("Dungeon Crawler", random.randint(5,11), random.uniform(1,2), random.randint(5,11),
+                                random.randint(25,45), random.randint(3,5), club,
                                 random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1)) + random.choices(passive_mystery_storage, k=random.randint(1,stage//2.5+1))))
     elif event == "*":
-        enemies.append(Enemy("Archdemon Crawler", random.randint(15,25), random.randint(3,8), random.randint(15,25),
-                            random.randint(55,75), random.randint(5,15), random.choice(starter_weapons),
+        enemies.append(Enemy("Archdemon Crawler", random.randint(12,18), random.uniform(1.5,3), random.randint(8,15),
+                            random.randint(50,65), random.randint(5,9), random.choice(starter_weapons),
                             random.choices(active_mystery_storage, k=random.randint(2,stage//2+2)) + random.choices(passive_mystery_storage, k=random.randint(2,stage//2+2))))
     elif event == "#":
-        enemies.append(Enemy("Overlord of the dungeon", random.randint(25,35), random.randint(5,10), random.randint(25,35),
-                            random.randint(75,95), random.randint(7,20), boss_weapons.pop(0),
+        enemies.append(Enemy("Overlord of the dungeon", random.randint(20,26), random.uniform(2.5,4), random.randint(18,25),
+                            random.randint(75,95), random.randint(11,15), boss_weapons.pop(0),
                             random.choices(active_mystery_storage, k=random.randint(3,stage//2+3)) + random.choices(passive_mystery_storage, k=random.randint(3,stage//2+3))))
 
     return enemies
@@ -463,8 +473,9 @@ def trap_activision(player, stage):
         exit() 
 
 def campfire_system(player):
+    old_health = player.complex_stats["health"]
     player.complex_stats["health"] += player.max_complex_stats["health"]//2
-    print(f"You have rested at the campfire!\n{player.name}'s current Health: {player.complex_stats['health']}")
+    print(f"You have rested at the campfire!\n{player.name}'s Health:{old_health} ==> {player.complex_stats['health']}")
     input("Press Enter to continue...")
 
 def check_is_int_and_len_longty(input, lenght = None):
