@@ -44,16 +44,16 @@ passive_mystery_storage = [pure_blood, pure_soul, ticker_skin, eagle_eye, improv
     #active mysteries
         #Turn based mysteries
 weak_aura_lock = Mystery("Weak Aura Lock", "enemy", {"primordial_aura":-75}, 50, True, 3)
-blackfire = Mystery("black fire", "enemy", {"health":-25}, 100, True, 3, True)
-fireball = Mystery("fire ball", "enemy", {"health":-10}, 50, True, 3, True)
+blackfire = Mystery("black fire", "enemy", {"health":-45}, 100, True, 3, True)
+fireball = Mystery("fire ball", "enemy", {"health":-25}, 50, True, 3, True)
 little_blessing = Mystery("little blessing", "self", {"health":50}, 100, True, 3, True)
-toxic_slash = Mystery("toxic slash", "enemy", {"health":-15}, 65, True, 3, True)
+toxic_slash = Mystery("toxic slash", "enemy", {"health":-40}, 80, True, 3, True)
 aura_burst = Mystery("aura burst", "self", {"aura_density":1.5}, 75, True, 3)
-poisened_stab = Mystery("poisened stab", "enemy", {"health":-20}, 35, True, 2, True)
+poisened_stab = Mystery("poisened stab", "enemy", {"health":-30}, 35, True, 2, True)
 bloody_slash = Mystery("bloody slash", "enemy", {"health":-40}, 110, True, 2, True)
 slowless = Mystery("slowless", "enemy", {"dexterity":-5}, 75, True, 2)
 dark_binding = Mystery("dark binding", "enemy", {"prediction":-3}, 60, True, 2)
-acid_blast = Mystery("acid blast", "enemy", {"health":-30}, 80, True, 2, True)
+acid_blast = Mystery("acid blast", "enemy", {"health":-40}, 80, True, 2, True)
 energized_life = Mystery("energized life", "self", {"vitality":10}, 100, True, 2)
 
 turn_based_mystery_storage = [weak_aura_lock, blackfire, fireball, little_blessing, toxic_slash,
@@ -62,15 +62,15 @@ turn_based_mystery_storage = [weak_aura_lock, blackfire, fireball, little_blessi
 
         #Instant mysteries
 quick_slice =  Mystery("quick slice", "enemy", {"health":-85}, 125, True)
-heavy_strike = Mystery("heavy strike", "enemy", {"health":-150}, 220, True)
-blunt_edge = Mystery("blunt edge", "enemy", {"health":-30}, 20, True)
-aura_blast = Mystery("aura blast", "enemy", {"health":-50}, 85, True)
+heavy_strike = Mystery("heavy strike", "enemy", {"health":-150}, 185, True)
+blunt_edge = Mystery("blunt edge", "enemy", {"health":-45}, 30, True)
+aura_blast = Mystery("aura blast", "enemy", {"health":-65}, 90, True)
 horizontal_slash = Mystery("horizontal slash", "enemy", {"health":-75}, 100, True)
 reaper = Mystery("reaper", "enemy", {"health":-500}, 10, True) #gm only
-hearth_strike = Mystery("hearth strike", "enemy", {"health":-100}, 150, True)
-body_slam = Mystery("body slam", "enemy", {"health":-50}, 75, True)
+hearth_strike = Mystery("hearth strike", "enemy", {"health":-100}, 135, True)
+body_slam = Mystery("body slam", "enemy", {"health":-70}, 90, True)
 exhaustion_curse = Mystery("exhaustion curse", "enemy", {"primordial_aura":-125}, 100, True)
-double_strike = Mystery("double strike", "enemy", {"health":-100}, 140, True)
+double_strike = Mystery("double strike", "enemy", {"health":-110}, 130, True)
 rest = Mystery("rest", "self", {"primordial_aura":50}, 0, True)
 
 
@@ -257,11 +257,11 @@ def create_enemies(stage, event):
                                 random.randint(25,45), random.randint(3,5), club,
                                 random.choices(active_mystery_storage, k=random.randint(1,stage//2.5+1)) + random.choices(passive_mystery_storage, k=random.randint(1,stage//2.5+1))))
     elif event == "*":
-        enemies.append(Enemy("Archdemon Crawler", random.randint(12,18), random.uniform(1.5,3), random.randint(8,15),
+        enemies.append(Enemy("Archdemon Crawler", random.randint(14,20), random.uniform(1.5,3), random.randint(8,15),
                             random.randint(50,65), random.randint(5,9), random.choice(starter_weapons),
                             random.choices(active_mystery_storage, k=random.randint(2,stage//2+2)) + random.choices(passive_mystery_storage, k=random.randint(2,stage//2+2))))
     elif event == "#":
-        enemies.append(Enemy("Overlord of the dungeon", random.randint(20,26), random.uniform(2.5,4), random.randint(18,25),
+        enemies.append(Enemy("Overlord of the dungeon", random.randint(22,28), random.uniform(2.5,4), random.randint(18,25),
                             random.randint(75,95), random.randint(11,15), boss_weapons.pop(0),
                             random.choices(active_mystery_storage, k=random.randint(3,stage//2+3)) + random.choices(passive_mystery_storage, k=random.randint(3,stage//2+3))))
 
