@@ -29,7 +29,10 @@ class Mystery():
                 duration += " -Temporarily-"
         else:
             duration = f"for a cost of {self.aura_cost} AURA"
-        effect = [f"deals {int(value*aura_amplifier)} damage to {key}" for key, value in self.target_stat_and_strength.items()][0]
+        if self.target == "self":
+            effect = [f"+{int(value*aura_amplifier)} to {key}" for key, value in self.target_stat_and_strength.items()][0]
+        else:
+            effect = [f"deals {int(value*aura_amplifier)} damage to {key}" for key, value in self.target_stat_and_strength.items()][0]
         return f"Targets the {self.target} with {effect} {duration}."
 
 
@@ -54,7 +57,7 @@ class Creature():
     def __init__(self,name, vitality, aura_density, dexterity, constitution, prediction, weapon = None, mysteries=None) -> None:
         self.name = name
         
-        self.base_stats = {  "vitality": vitality, "aura_density": aura_density,
+        self.base_stats = {  "vitality": vitality, "aura_density": round(aura_density,2),
                              "dexterity": dexterity, "constitution": constitution,
                              "prediction":prediction}
         self.real_stats = {**self.base_stats}
@@ -114,8 +117,8 @@ class Creature():
         self.max_complex_stats = {
             "health": self.real_stats["vitality"]*7 + self.real_stats["constitution"]*3,
             "initiative": self.real_stats["dexterity"]*3 + self.real_stats["prediction"]*2,
-            "primordial_aura":self.real_stats["constitution"]*8 + self.real_stats["aura_density"]*2,
-            "aura_regeneration": self.real_stats["vitality"]*3 - self.real_stats["aura_density"],
+            "primordial_aura": int(self.real_stats["constitution"]*8 + self.real_stats["aura_density"]*2),
+            "aura_regeneration": int(self.real_stats["vitality"]*3 - self.real_stats["aura_density"]),
         }
         
         self.complex_stats.update({ 
