@@ -12,7 +12,7 @@ def main():
     player_name = input("Enter player name: ")
     player = Player(player_name, random.randint(8,15), random.uniform(1,1.25), random.randint(8,12), 
                             random.randint(35,55), random.randint(3,8), random.choice(starter_weapons),
-                            [random.choice(passive_mystery_storage), random.choice(instant_mystery_storage), random.choice(turn_based_mystery_storage)])
+                            [random.choice(passive_mystery_storage), random.choice(instant_mystery_storage), random.choice(turn_based_mystery_storage),rest])
     stage = 0
     level = 1
     while True:
@@ -71,6 +71,7 @@ hearth_strike = Mystery("hearth strike", "enemy", {"health":-100}, 150, True)
 body_slam = Mystery("body slam", "enemy", {"health":-50}, 75, True)
 exhaustion_curse = Mystery("exhaustion curse", "enemy", {"primordial_aura":-125}, 100, True)
 double_strike = Mystery("double strike", "enemy", {"health":-100}, 140, True)
+rest = Mystery("rest", "self", {"primordial_aura":50}, 0, True)
 
 
 instant_mystery_storage = [quick_slice, heavy_strike, blunt_edge, aura_blast, horizontal_slash, hearth_strike, body_slam, exhaustion_curse, double_strike]
